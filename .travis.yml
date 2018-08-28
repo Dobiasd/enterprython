@@ -1,0 +1,19 @@
+language: python
+matrix:
+  include:
+  - name: "3.6 Unit Test"
+    python: "3.6-dev"
+  - name: "3.7 Unit Test"
+    python: "3.7"
+    dist: xenial
+    sudo: true
+install:
+  - python3 -m pip install pylint
+  - python3 -m pip install mypy
+  - python3 -m pip install .
+  - pylint ./enterprython/_functions.py
+  - mypy --strict ./enterprython/_functions.py
+  - cd enterprython && python3 -m unittest _functions.py && cd ..
+script:
+  - python3 --version
+  - python3 examples/readme_examples.py
