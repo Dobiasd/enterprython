@@ -4,6 +4,7 @@ enterprython - tests
 
 import configparser
 import unittest
+from abc import ABC, abstractmethod
 
 from enterprython import assemble, component, configure, value
 
@@ -13,17 +14,33 @@ __email__ = "editgym@gmail.com"
 __license__ = "MIT"
 
 
-@component
-class Service:  # pylint: disable=too-few-public-methods
-    """Example service"""
+class ServiceInterface(ABC):
+    """Define interface of a service that can greet."""
 
-    def __init__(self) -> None:
-        """Reads a value from the configuration."""
-        self._greeting: str = value(str, 'service', 'greeting')
+    @abstractmethod
+    def greet(self, name: str) -> str:
+        pass
+
+
+@component
+class Service(ServiceInterface):  # pylint: disable=too-few-public-methods
+    """Example service"""
 
     def greet(self, name: str) -> str:
         """Returns greeting message according to configuration."""
-        return f"{self._greeting}, {name}!"
+        return f"Hello, {name}!"
+
+
+class WithValue:  # pylint: disable=too-few-public-methods
+    """Example class using a configuration value"""
+
+    def __init__(self) -> None:
+        """Reads a value from the configuration."""
+        self._value: int = value(int, 'WithValue', 'value')
+
+    def show_value(self) -> str:
+        """Returns string representation of value."""
+        return str(self._value)
 
 
 class Client:  # pylint: disable=too-few-public-methods
@@ -51,19 +68,34 @@ class ClientKWArg:  # pylint: disable=too-few-public-methods
         return self._service.greet(self._name)
 
 
+class ClientDependingOnInterface:  # pylint: disable=too-few-public-methods
+    """Depends on Service"""
+
+    def __init__(self, service: ServiceInterface) -> None:
+        """Use constructor injection."""
+        self._service = service
+
+    def greet_world(self) -> str:
+        """Uses Service to greet the world."""
+        return self._service.greet("World")
+
+
 class FullTest(unittest.TestCase):
     """Check basic functionality."""
 
-    def test_all(self) -> None:
-        """Full functionality."""
+    def test_assemble(self) -> None:
+        """Basic component lookup."""
+        self.assertEqual("Hello, World!", assemble(Client).greet_world())
+
+    def test_value(self) -> None:
+        """Using value from configuration."""
         config = configparser.ConfigParser()
         config.read_string("""
-            [service]
-            greeting = Hello
+            [WithValue]
+            value = 42
         """)
         configure(config)
-        self.assertEqual("Hello, World!",
-                         assemble(ClientKWArg, name="World").greet_world())
+        self.assertEqual('42', assemble(WithValue).show_value())
 
     def test_uniqueness(self) -> None:
         """Multiple calls to assemble shall return the same object."""
@@ -77,3 +109,8 @@ class FullTest(unittest.TestCase):
             class Duplicate:  # pylint: disable=too-few-public-methods,unused-variable
                 """Class to be registered multiple times."""
                 pass
+
+    def test_interface(self) -> None:
+        """Concrete object shall be injected."""
+        self.assertEqual("Hello, World!",
+                         assemble(ClientDependingOnInterface).greet_world())

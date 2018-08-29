@@ -42,7 +42,8 @@ def assemble(constructor: Callable[..., TypeT], **kwargs: Any) -> TypeT:
     arguments: Dict[str, Any] = kwargs
     for parameter_name, parameter_type in parameters.items():
         for comp in ENTERPRYTHON_COMPONENTS:
-            if comp == parameter_type:
+            base_classes = inspect.getmro(comp)
+            if parameter_type == comp or parameter_type in base_classes:
                 arguments[parameter_name] = assemble(comp)
                 break
     result = constructor(**arguments)
