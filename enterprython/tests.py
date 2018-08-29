@@ -222,8 +222,14 @@ class FullTest(unittest.TestCase):
     def test_multiple_services(self) -> None:
         """Multi-injection."""
         client = assemble(ClientAB)
-        self.assertEqual("A", client.service_a.value)
-        self.assertEqual("B", client.service_b.value)
+        self.assertEqual('A', client.service_a.value)
+        self.assertEqual('B', client.service_b.value)
+
+    def test_manual_overwrite(self) -> None:
+        """Prefer manually provided services."""
+        client = assemble(ClientAB, service_b=ServiceB('BManual'))
+        self.assertEqual('A', client.service_a.value)
+        self.assertEqual('BManual', client.service_b.value)
 
     def test_ambiguous(self) -> None:
         """Ambiguous dependency."""

@@ -83,7 +83,11 @@ def assemble(the_type: Callable[..., TypeT], **kwargs: Any) -> TypeT:
         parameters[param.name] = param.annotation
 
     arguments: Dict[str, Any] = kwargs
+    uses_manual_args = False
     for parameter_name, parameter_type in parameters.items():
+        if parameter_name in arguments:
+            uses_manual_args = True
+            continue
         if _is_list_type(parameter_type):
             parameter_components = _get_components(_get_list_type_elem_type(parameter_type))
             arguments[parameter_name] = list(map(assemble,
@@ -94,7 +98,7 @@ def assemble(the_type: Callable[..., TypeT], **kwargs: Any) -> TypeT:
             if parameter_component is not None:
                 arguments[parameter_name] = assemble(parameter_component.get_type())
     result = the_type(**arguments)
-    if stored_component:
+    if stored_component and not uses_manual_args:
         stored_component.set_instance_if_singleton(result)
     return result
 

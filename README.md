@@ -81,7 +81,7 @@ A client may depend on an abstract base class. Enterprython will inject the matc
 
 ```python
 from abc import ABC
-from enterprython import component
+from enterprython import assemble, component
 
 class ServiceInterface(ABC):
     ...
@@ -93,6 +93,8 @@ class ServiceImpl(ServiceInterface):
 class Client:
     def __init__(self, services: ServiceInterface) -> None:
         ...
+        
+assemble(Client)
 ```
 
 One singleton instance of `ServiceImpl` is created and injected into `Client`.
@@ -105,7 +107,7 @@ A client may depend on a list of implementations of a service interface.
 ```python
 from abc import ABC
 from typing import List
-from enterprython import component
+from enterprython import assemble, component
 
 class ServiceInterface(ABC):
     pass
@@ -123,9 +125,38 @@ class ServiceB(ServiceInterface):
 class Client:
     def __init__(self, services: List[ServiceInterface]) -> None:
         ...
+        
+assemble(Client)
 ```
 
 `[ServiceA(), ServiceB()]` is injected into `Client`.
+
+
+### Mixing managed and manual injection
+
+One part of a client's dependencies might be injected manually, the rest automatically.
+
+```python
+
+from enterprython import assemble, component
+
+@component()
+class ServiceA:
+        ...
+
+class ServiceB:
+        ...
+
+class Client:
+    def __init__(self, service_a: ServiceA, service_b: ServiceB) -> None:
+        ...
+        
+assemble(Client, service_b=ServiceB())
+```
+
+`service_a` comes from the DI container, `service_b` from user code.
+
+If `ServiceB` would also have a `@component()` annotation, the manually provided object is preferred. 
 
 
 Requirements and Installation
