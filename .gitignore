@@ -8,3 +8,4 @@ __pycache__
 /github_issues
 /Dockerfile*
 /docker-compose.yml
+.pylintrc
