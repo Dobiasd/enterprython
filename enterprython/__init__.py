@@ -1,4 +1,4 @@
-from ._functions import assemble, component, configure, value
+from ._inject import assemble, component, configure, value
 
 name = "enterprython"
 
