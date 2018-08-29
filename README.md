@@ -114,13 +114,11 @@ class ServiceInterface(ABC):
 
 @component()
 class ServiceA(ServiceInterface):
-    def __init__(self) -> None:
-        ...
+    ...
 
 @component()
 class ServiceB(ServiceInterface):
-    def __init__(self) -> None:
-        ...
+    ...
 
 class Client:
     def __init__(self, services: List[ServiceInterface]) -> None:
@@ -142,10 +140,10 @@ from enterprython import assemble, component
 
 @component()
 class ServiceA:
-        ...
+    ...
 
 class ServiceB:
-        ...
+    ...
 
 class Client:
     def __init__(self, service_a: ServiceA, service_b: ServiceB) -> None:
@@ -156,7 +154,28 @@ assemble(Client, service_b=ServiceB())
 
 `service_a` comes from the DI container, `service_b` from user code.
 
-If `ServiceB` also has a `@component()` annotation, the manually provided object is preferred. 
+If `ServiceB` also has a `@component()` annotation, the manually provided object is preferred.
+
+
+### Free functions as clients
+
+Since class constructors are fundamentally just normal functions, we can inject dependencies into free functions too.
+
+```python
+
+from enterprython import assemble, component
+
+@component()
+class Service:
+    ...
+
+def client(service: Service) -> None:
+    ...
+        
+assemble(client)
+```
+
+A singleton instance of `Service` is created and used to call `client`. 
 
 
 Requirements and Installation

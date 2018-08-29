@@ -63,6 +63,11 @@ class Client:  # pylint: disable=too-few-public-methods
         return self._service.greet("World")
 
 
+def client_func(service: Service) -> str:
+    """Use function argument injection."""
+    return service.greet("World")
+
+
 class ClientNonSingleton:  # pylint: disable=too-few-public-methods
     """Depends on ServiceNonSingleton"""
 
@@ -99,7 +104,7 @@ class ServiceB(NamedTuple):
     value: str = "B"
 
 
-class ServiceCNoComponent(NamedTuple):
+class ServiceCNoComponent(NamedTuple):  # pylint: disable=too-few-public-methods
     """Depends on nothing."""
     value: str = "C"
 
@@ -195,6 +200,10 @@ class FullTest(unittest.TestCase):
     def test_assemble(self) -> None:
         """Basic component lookup."""
         self.assertEqual("Hello, World!", assemble(Client).greet_world())
+
+    def test_assemble_func(self) -> None:
+        """Free function instead of constructor."""
+        self.assertEqual("Hello, World!", assemble(client_func))
 
     def test_value(self) -> None:
         """Using value from configuration."""
