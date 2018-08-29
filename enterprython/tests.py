@@ -38,6 +38,19 @@ class Client:  # pylint: disable=too-few-public-methods
         return self._service.greet("World")
 
 
+class Client_kwarg:  # pylint: disable=too-few-public-methods
+    """Depends on Service"""
+
+    def __init__(self, service: Service, name: str) -> None:
+        """Use constructor injection."""
+        self._service = service
+        self._name = name
+
+    def greet_world(self) -> str:
+        """Uses Service to greet the world."""
+        return self._service.greet(self._name)
+
+
 class FullTest(unittest.TestCase):
     """Check basic functionality."""
 
@@ -49,4 +62,5 @@ class FullTest(unittest.TestCase):
             greeting = Hello
         """)
         configure(config)
-        self.assertEqual("Hello, World!", assemble(Client).greet_world())
+        self.assertEqual("Hello, World!",
+                         assemble(Client_kwarg, name="World").greet_world())

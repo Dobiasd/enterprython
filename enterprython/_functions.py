@@ -18,7 +18,7 @@ def configure(config: configparser.ConfigParser) -> None:
     ENTERPRYTHON_CONFIG = config
 
 
-def assemble(constructor: Callable[..., TypeT]) -> TypeT:
+def assemble(constructor: Callable[..., TypeT], **kwargs: Any) -> TypeT:
     """Create an instance of a certain type,
     using constructor injection if needed."""
     signature = inspect.signature(constructor)
@@ -32,11 +32,12 @@ def assemble(constructor: Callable[..., TypeT]) -> TypeT:
                             'supported in target functions.')
         parameters[param.name] = param.annotation
 
-    arguments: Dict[str, Any] = {}
+    arguments: Dict[str, Any] = kwargs
     for parameter_name, parameter_type in parameters.items():
         for comp in ENTERPRYTHON_COMPONENTS:
             if comp == parameter_type:
                 arguments[parameter_name] = assemble(comp)
+                break
     return constructor(**arguments)
 
 
