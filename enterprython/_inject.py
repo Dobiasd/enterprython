@@ -9,7 +9,7 @@ from typing import Any, Callable, Dict, Optional, Type, TypeVar, List, Generic
 TypeT = TypeVar('TypeT')
 
 
-class _Component(Generic[TypeT]):
+class _Component(Generic[TypeT]):  # pylint: disable=unsubscriptable-object
     """Internal class to store components for DI."""
 
     def __init__(self, the_type: Callable[..., TypeT], singleton: bool) -> None:
