@@ -4,12 +4,12 @@ enterprython - Type-based dependency-injection framework
 
 import configparser
 import inspect
-from typing import Any, Callable, Dict, List, Type, TypeVar, Optional
+from typing import Any, Callable, Dict, Optional, Type, TypeVar
 
 TypeT = TypeVar('TypeT')
 
 ENTERPRYTHON_CONFIG: Optional[configparser.ConfigParser] = None
-ENTERPRYTHON_COMPONENTS: Dict[Callable[..., TypeT], Optional[TypeT]] = {}
+ENTERPRYTHON_COMPONENTS: Dict[Callable[..., TypeT], Any] = {}
 
 
 def configure(config: configparser.ConfigParser) -> None:

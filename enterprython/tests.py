@@ -38,7 +38,7 @@ class Client:  # pylint: disable=too-few-public-methods
         return self._service.greet("World")
 
 
-class Client_kwarg:  # pylint: disable=too-few-public-methods
+class ClientKWArg:  # pylint: disable=too-few-public-methods
     """Depends on Service"""
 
     def __init__(self, service: Service, name: str) -> None:
@@ -63,16 +63,17 @@ class FullTest(unittest.TestCase):
         """)
         configure(config)
         self.assertEqual("Hello, World!",
-                         assemble(Client_kwarg, name="World").greet_world())
+                         assemble(ClientKWArg, name="World").greet_world())
 
     def test_uniqueness(self) -> None:
         """Multiple calls to assemble shall return the same object."""
-        self.assertTrue(assemble(Client)._service is assemble(Client)._service)
+        self.assertTrue(assemble(Client)._service is assemble(Client)._service)  # pylint: disable=protected-access
 
     def test_double_registration(self) -> None:
         """Multiple calls to assemble shall return the same object."""
         with self.assertRaises(TypeError):
             @component
             @component
-            class foo:
+            class Duplicate:  # pylint: disable=too-few-public-methods,unused-variable
+                """Class to be registered multiple times."""
                 pass
