@@ -16,6 +16,13 @@ Table of contents
 -----------------
   * [Introduction](#introduction)
   * [Features](#features)
+    * [Abstract base classes](#abstract-base-classes)
+    * [Factories](#factories)
+    * [Non-singleton services](#non-singleton-services)
+    * [Service lists](#service-lists)
+    * [Mixing managed and manual injection](#mixing-managed-and-manual-injection)
+    * [Free functions as clients](#free-functions-as-clients)
+    
   * [Requirements and Installation](#requirements-and-installation)
 
 
@@ -61,20 +68,6 @@ Hello, World!
 Features
 --------
 
-### Non-singleton services
-
-If a service is annotated with `@component(singleton=False)` a new instance of it is created with every injection. 
-
-```python
-@component(singleton=False)
-class Service:
-    ...
-
-class Client:
-    def __init__(self, service: Service) -> None:
-        ...
-```
-
 ### Abstract base classes
 
 A client may depend on an abstract base class. Enterprython will inject the matching implementation. 
@@ -98,6 +91,46 @@ assemble(Client)
 ```
 
 One singleton instance of `ServiceImpl` is created and injected into `Client`.
+
+
+### Factories
+
+Annotating a function with `@component()` is registered as a factory for its return type.
+
+```python
+
+from enterprython import assemble, component
+
+class Service:
+    ...
+    
+@component()
+def service_factory() -> Service:
+    return Service
+
+class Client:
+    def __init__(self, service: Service) -> None:
+        ...
+        
+assemble(Client)
+```
+
+`service_factory` is used to create the `Service` instance for calling the constructor of `Client`.
+
+
+### Non-singleton services
+
+If a service is annotated with `@component(singleton=False)` a new instance of it is created with every injection. 
+
+```python
+@component(singleton=False)
+class Service:
+    ...
+
+class Client:
+    def __init__(self, service: Service) -> None:
+        ...
+```
 
 
 ### Service lists
@@ -176,31 +209,6 @@ assemble(client)
 ```
 
 A singleton instance of `Service` is created and used to call `client`.
-
-
-### Factories
-
-Annotating a function with `@component()` is registered as a factory for its return type.
-
-```python
-
-from enterprython import assemble, component
-
-class Service:
-    ...
-    
-@component()
-def service_factory() -> Service:
-    return Service
-
-class Client:
-    def __init__(self, service: Service) -> None:
-        ...
-        
-assemble(Client)
-```
-
-`service_factory` is used to create the `Service` instance for calling the constructor of `Client`.
 
 
 Requirements and Installation
