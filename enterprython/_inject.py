@@ -33,6 +33,7 @@ class _Component(Generic[TypeT]):  # pylint: disable=unsubscriptable-object
             return_type = inspect.signature(the_type).return_annotation
             if return_type is inspect.Signature.empty:
                 raise TypeError(f'Unknown return type of {the_type.__name__}')
+            self._type = return_type
             self._target_types = [return_type]
         self._instance: Optional[TypeT] = None
 

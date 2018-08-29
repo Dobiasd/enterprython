@@ -79,6 +79,22 @@ class ClientServiceFromFactory(NamedTuple):  # pylint: disable=too-few-public-me
     service: ServiceFromFactory
 
 
+class ServiceFromFactoryNonSingleton(NamedTuple):  # pylint: disable=too-few-public-methods
+    """Depends on nothing."""
+    value: int = 42
+
+
+@component(singleton=False)
+def service_factory_non_singleton() -> ServiceFromFactoryNonSingleton:
+    """Create a service."""
+    return ServiceFromFactoryNonSingleton()
+
+
+class ClientServiceFromFactoryNonSingleton(NamedTuple):  # pylint: disable=too-few-public-methods
+    """Depends on ServiceFromFactoryNonSingleton."""
+    service: ServiceFromFactoryNonSingleton
+
+
 def client_func(service: Service) -> str:
     """Use function argument injection."""
     return service.greet("World")
@@ -221,9 +237,30 @@ class FullTest(unittest.TestCase):
         """Free function instead of constructor."""
         self.assertEqual("Hello, World!", assemble(client_func))
 
+    def test_singleton(self) -> None:
+        """Multiple calls to assemble shall return the same object."""
+        self.assertTrue(assemble(Client)._service is assemble(Client)._service)  # pylint: disable=protected-access
+
+    def test_non_singleton(self) -> None:
+        """Multiple calls to assemble shall return the same object."""
+        self.assertTrue(
+            assemble(ClientNonSingleton)._service is not  # pylint: disable=protected-access
+            assemble(ClientNonSingleton)._service)  # pylint: disable=protected-access
+
     def test_factory(self) -> None:
         """Factory function as component."""
         self.assertEqual(42, assemble(ClientServiceFromFactory).service.value)
+
+    def test_factory_singleton(self) -> None:
+        """Factory function as component."""
+        self.assertTrue(assemble(ClientServiceFromFactory).service is
+                        assemble(ClientServiceFromFactory).service)  # pylint: disable=protected-access
+
+    def test_factory_non_singleton(self) -> None:
+        """Factory function as component."""
+        self.assertTrue(
+            assemble(ClientServiceFromFactoryNonSingleton).service is not  # pylint: disable=protected-access
+            assemble(ClientServiceFromFactoryNonSingleton).service)  # pylint: disable=protected-access
 
     def test_value(self) -> None:
         """Using value from configuration."""
@@ -234,16 +271,6 @@ class FullTest(unittest.TestCase):
         """)
         configure(config)
         self.assertEqual('42', assemble(WithValue).show_value())
-
-    def test_singleton(self) -> None:
-        """Multiple calls to assemble shall return the same object."""
-        self.assertTrue(assemble(Client)._service is assemble(Client)._service)  # pylint: disable=protected-access
-
-    def test_non_singleton(self) -> None:
-        """Multiple calls to assemble shall return the same object."""
-        self.assertTrue(
-            assemble(ClientNonSingleton)._service is not  # pylint: disable=protected-access
-            assemble(ClientNonSingleton)._service)  # pylint: disable=protected-access
 
     def test_double_registration(self) -> None:
         """Multiple calls to assemble shall return the same object."""
