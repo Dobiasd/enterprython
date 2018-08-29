@@ -28,7 +28,7 @@ and use a library doing the lookup for you based on static type annotations, ins
 `enterprython` provides exactly that.
 
 ```python
-from enterprython import assemble, component, configure, value
+from enterprython import assemble, component
 
 
 @component()
@@ -74,6 +74,58 @@ class Client:
     def __init__(self, service: Service) -> None:
         ...
 ```
+
+### Abstract base classes
+
+A client may depend on an abstract base class. Enterprython will inject the matching implementation. 
+
+```python
+from abc import ABC
+from enterprython import component
+
+class ServiceInterface(ABC):
+    ...
+
+@component()
+class ServiceImpl(ServiceInterface):
+    ...
+
+class Client:
+    def __init__(self, services: ServiceInterface) -> None:
+        ...
+```
+
+One singleton instance of `ServiceImpl` is created and injected into `Client`.
+
+
+### Service lists
+
+A client may depend on a list of implementations of a service interface.
+
+```python
+from abc import ABC
+from typing import List
+from enterprython import component
+
+class ServiceInterface(ABC):
+    pass
+
+@component()
+class ServiceA(ServiceInterface):
+    def __init__(self) -> None:
+        ...
+
+@component()
+class ServiceB(ServiceInterface):
+    def __init__(self) -> None:
+        ...
+
+class Client:
+    def __init__(self, services: List[ServiceInterface]) -> None:
+        ...
+```
+
+`[ServiceA(), ServiceB()]` is injected into `Client`.
 
 
 Requirements and Installation

@@ -5,7 +5,7 @@ enterprython - tests
 import configparser
 import unittest
 from abc import ABC, abstractmethod
-from typing import NamedTuple
+from typing import NamedTuple, List
 
 from enterprython import assemble, component, configure, value
 
@@ -16,7 +16,7 @@ __license__ = "MIT"
 
 
 class ServiceInterface(ABC):  # pylint: disable=too-few-public-methods
-    """Define interface of a service that can greet."""
+    """Defines interface of a service that can greet."""
 
     @abstractmethod
     def greet(self, name: str) -> str:
@@ -131,6 +131,45 @@ class ClientDependingOnInterface:  # pylint: disable=too-few-public-methods
         return self._service.greet("World")
 
 
+class MultiServiceInterface(ABC):  # pylint: disable=too-few-public-methods
+    """Define interface for multiple services."""
+    _value: str = "Interface"
+
+
+@component()  # pylint: disable=too-few-public-methods
+class ServiceMultiA(MultiServiceInterface):
+    """Example service A"""
+
+    def __init__(self) -> None:
+        """Depends on nothing."""
+        self._value = "A"
+
+
+@component()  # pylint: disable=too-few-public-methods
+class ServiceMultiB(MultiServiceInterface):
+    """Example service B"""
+
+    def __init__(self) -> None:
+        """Depends on nothing."""
+        self._value = "B"
+
+
+class ClientDependingOnOneOfTwoServices:  # pylint: disable=too-few-public-methods
+    """Depends on ServiceMultiA or ServiceMultiB"""
+
+    def __init__(self, service: MultiServiceInterface) -> None:
+        """Use constructor injection."""
+        self._service = service
+
+
+class ClientDependingOnAllMultiServiceInterfaceImpls:  # pylint: disable=too-few-public-methods
+    """Depends on ServiceMultiA and ServiceMultiB"""
+
+    def __init__(self, services: List[MultiServiceInterface]) -> None:
+        """Use constructor injection."""
+        self._services = services
+
+
 class FullTest(unittest.TestCase):
     """Check basic functionality."""
 
@@ -185,3 +224,15 @@ class FullTest(unittest.TestCase):
         client = assemble(ClientAB)
         self.assertEqual("A", client.service_a.value)
         self.assertEqual("B", client.service_b.value)
+
+    def test_ambiguous(self) -> None:
+        """Ambiguous dependency."""
+        with self.assertRaises(TypeError):
+            assemble(ClientDependingOnOneOfTwoServices)
+
+    def test_service_list(self) -> None:
+        """Inject multiple services as List."""
+        client = assemble(ClientDependingOnAllMultiServiceInterfaceImpls)
+        self.assertEqual(2, len(client._services))  # pylint: disable=protected-access
+        self.assertEqual("A", client._services[0]._value)  # pylint: disable=protected-access
+        self.assertEqual("B", client._services[1]._value)  # pylint: disable=protected-access

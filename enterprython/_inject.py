@@ -4,7 +4,17 @@ enterprython - Type-based dependency-injection
 
 import configparser
 import inspect
+import sys
 from typing import Any, Callable, Dict, Optional, Type, TypeVar, List, Generic
+
+VER_3_7_AND_UP = sys.version_info[:3] >= (3, 7, 0)  # PEP 560
+
+# pylint: disable=no-name-in-module
+if VER_3_7_AND_UP:
+    from typing import _GenericAlias  # type: ignore
+else:
+    pass
+# pylint: enable=no-name-in-module
 
 TypeT = TypeVar('TypeT')
 
@@ -43,19 +53,58 @@ ENTERPRYTHON_CONFIG: Optional[configparser.ConfigParser] = None
 ENTERPRYTHON_COMPONENTS: List[_Component] = []
 
 
+def _get_components(constructor: Callable[..., TypeT]) -> List[_Component]:
+    """Return stored component for type if available."""
+    return [stored_component
+            for stored_component in ENTERPRYTHON_COMPONENTS
+            if stored_component.matches(constructor)]
+
+
 def _get_component(constructor: Callable[..., TypeT]) -> Optional[_Component]:
     """Return stored component for type if available."""
-    for stored_component in ENTERPRYTHON_COMPONENTS:
-        if stored_component.matches(constructor):
-            return stored_component
-    return None
+    components = _get_components(constructor)
+    if len(components) > 1:
+        raise TypeError(f'Ambiguous dependency {constructor.__name__}.')
+    if not components:
+        return None
+    return components[0]
 
 
 def _add_component(constructor: Callable[..., TypeT], singleton: bool) -> None:
     """Store new component for DI."""
     global ENTERPRYTHON_COMPONENTS  # pylint: disable=global-statement
-    assert _get_component(constructor) is None
+    if _get_component(constructor) is not None:
+        raise TypeError(f'{constructor.__name__} '
+                        'already registered as component.')
     ENTERPRYTHON_COMPONENTS.append(_Component(constructor, singleton))
+
+
+def _is_list_type(the_type: Callable[..., TypeT]) -> bool:
+    """Return True if the type is a List."""
+    try:
+        if VER_3_7_AND_UP:
+            return _is_instance(the_type,
+                                _GenericAlias) and _type_origin_is(the_type, list)
+        return issubclass(the_type, List)  # type: ignore
+    except TypeError:
+        return False
+
+
+def _is_instance(the_value: TypeT, the_type: Callable[..., TypeT]) -> bool:
+    return isinstance(the_value, the_type)  # type: ignore
+
+
+def _type_origin_is(the_type: Callable[..., TypeT], origin: Any) -> bool:
+    assert hasattr(the_type, '__origin__')
+    return the_type.__origin__ is origin  # type: ignore
+
+
+def _get_list_type_elem_type(list_type: Callable[..., TypeT]) -> Callable[..., Any]:
+    """Return the type of a single element of the list type."""
+    assert _is_list_type(list_type)
+    list_args = list_type.__args__  # type: ignore
+    assert len(list_args) == 1
+    return list_args[0]  # type: ignore
 
 
 def configure(config: configparser.ConfigParser) -> None:
@@ -89,9 +138,15 @@ def assemble(constructor: Callable[..., TypeT], **kwargs: Any) -> TypeT:
 
     arguments: Dict[str, Any] = kwargs
     for parameter_name, parameter_type in parameters.items():
-        parameter_component = _get_component(parameter_type)
-        if parameter_component is not None:
-            arguments[parameter_name] = assemble(parameter_component.get_type())
+        if _is_list_type(parameter_type):
+            parameter_components = _get_components(_get_list_type_elem_type(parameter_type))
+            arguments[parameter_name] = list(map(assemble,
+                                                 map(lambda comp: comp.get_type(),
+                                                     parameter_components)))
+        else:
+            parameter_component = _get_component(parameter_type)
+            if parameter_component is not None:
+                arguments[parameter_name] = assemble(parameter_component.get_type())
     result = constructor(**arguments)
     if stored_component:
         stored_component.set_instance_if_singleton(result)
@@ -121,9 +176,6 @@ def component(singleton: bool = True) -> Callable[[Callable[..., TypeT]],
         if inspect.isabstract(the_type):
             raise TypeError(f'Can not register abstract class as component.')
         global ENTERPRYTHON_COMPONENTS  # pylint: disable=global-statement
-        if _get_component(the_type) is not None:
-            raise TypeError(f'{the_type.__name__} '
-                            'already registered as component.')
         _add_component(the_type, singleton)
         return the_type
 
