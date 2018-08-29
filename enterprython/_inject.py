@@ -4,12 +4,12 @@ enterprython - Type-based dependency-injection framework
 
 import configparser
 import inspect
-from typing import Any, Callable, Dict, Optional, Type, TypeVar
+from typing import Any, Dict, Optional, Type, TypeVar
 
 TypeT = TypeVar('TypeT')
 
 ENTERPRYTHON_CONFIG: Optional[configparser.ConfigParser] = None
-ENTERPRYTHON_COMPONENTS: Dict[Callable[..., TypeT], Any] = {}
+ENTERPRYTHON_COMPONENTS: Dict[TypeT, Any] = {}
 
 
 def configure(config: configparser.ConfigParser) -> None:
@@ -18,7 +18,7 @@ def configure(config: configparser.ConfigParser) -> None:
     ENTERPRYTHON_CONFIG = config
 
 
-def assemble(constructor: Callable[..., TypeT], **kwargs: Any) -> TypeT:
+def assemble(constructor: TypeT, **kwargs: Any) -> TypeT:
     """Create an instance of a certain type,
     using constructor injection if needed."""
 
@@ -26,11 +26,11 @@ def assemble(constructor: Callable[..., TypeT], **kwargs: Any) -> TypeT:
 
     if constructor in ENTERPRYTHON_COMPONENTS:
         if ENTERPRYTHON_COMPONENTS[constructor]:
-            return ENTERPRYTHON_COMPONENTS[constructor]
+            return ENTERPRYTHON_COMPONENTS[constructor]  # type: ignore
 
     signature = inspect.signature(constructor)
 
-    parameters: Dict[str, Callable[..., TypeT]] = {}
+    parameters: Dict[str, TypeT] = {}
     for param in signature.parameters.values():
         if param.name == 'self':
             continue
@@ -64,8 +64,10 @@ def value(the_type: Type[TypeT], config_section: str, value_name: str) -> TypeT:
     return ENTERPRYTHON_CONFIG.get(config_section, value_name)  # type: ignore
 
 
-def component(constructor: Callable[..., TypeT]) -> Callable[..., TypeT]:
+def component(constructor: TypeT) -> TypeT:
     """Annotation to register a class to be available for DI to constructors."""
+    if inspect.isabstract(constructor):
+        raise TypeError(f'Can not register abstract class as component.')
     global ENTERPRYTHON_COMPONENTS  # pylint: disable=global-statement
     if constructor in ENTERPRYTHON_COMPONENTS:
         raise TypeError(f'{constructor.__name__} '

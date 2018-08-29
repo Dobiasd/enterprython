@@ -14,20 +14,21 @@ __email__ = "editgym@gmail.com"
 __license__ = "MIT"
 
 
-class ServiceInterface(ABC):
+class ServiceInterface(ABC):  # pylint: disable=too-few-public-methods
     """Define interface of a service that can greet."""
 
     @abstractmethod
     def greet(self, name: str) -> str:
+        """Shall return greeting message."""
         pass
 
 
-@component
-class Service(ServiceInterface):  # pylint: disable=too-few-public-methods
+@component  # pylint: disable=too-few-public-methods
+class Service(ServiceInterface):
     """Example service"""
 
     def greet(self, name: str) -> str:
-        """Returns greeting message according to configuration."""
+        """Returns greeting message."""
         return f"Hello, {name}!"
 
 
