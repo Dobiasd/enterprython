@@ -56,11 +56,29 @@ if __name__ == "__main__":
     main()
 ```
 
+Output:
+
+```
+Hello, World!
+```
+
 
 features
 --------
 
-todo
+### Non-singletons
+
+If a service is annotated with `@component(singleton=False)` a new instance of it is created with every injection. 
+
+```python
+@component(singleton=False)
+class Service:
+    ...
+
+class Client:
+    def __init__(self, service: Service) -> None:
+        ...
+```
 
 
 Requirements and Installation

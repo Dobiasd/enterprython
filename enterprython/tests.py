@@ -32,6 +32,12 @@ class Service(ServiceInterface):
         return f"Hello, {name}!"
 
 
+@component(singleton=False)  # pylint: disable=too-few-public-methods
+class ServiceNonSingleton:
+    """Example service"""
+    pass
+
+
 class WithValue:  # pylint: disable=too-few-public-methods
     """Example class using a configuration value"""
 
@@ -54,6 +60,13 @@ class Client:  # pylint: disable=too-few-public-methods
     def greet_world(self) -> str:
         """Uses Service to greet the world."""
         return self._service.greet("World")
+
+
+class ClientNonSingleton:  # pylint: disable=too-few-public-methods
+    """Depends on ServiceNonSingleton"""
+
+    def __init__(self, service: ServiceNonSingleton) -> None:
+        self._service = service
 
 
 class ClientKWArg:  # pylint: disable=too-few-public-methods
@@ -98,9 +111,15 @@ class FullTest(unittest.TestCase):
         configure(config)
         self.assertEqual('42', assemble(WithValue).show_value())
 
-    def test_uniqueness(self) -> None:
+    def test_singleton(self) -> None:
         """Multiple calls to assemble shall return the same object."""
         self.assertTrue(assemble(Client)._service is assemble(Client)._service)  # pylint: disable=protected-access
+
+    def test_non_singleton(self) -> None:
+        """Multiple calls to assemble shall return the same object."""
+        self.assertTrue(
+            assemble(ClientNonSingleton)._service is not  # pylint: disable=protected-access
+            assemble(ClientNonSingleton)._service)  # pylint: disable=protected-access
 
     def test_double_registration(self) -> None:
         """Multiple calls to assemble shall return the same object."""
