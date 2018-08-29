@@ -1,5 +1,5 @@
 """
-enterprython - Type-based dependency-injection framework
+enterprython - Type-based dependency-injection
 """
 
 import configparser
@@ -64,15 +64,18 @@ def value(the_type: Callable[..., TypeT], config_section: str, value_name: str) 
     return ENTERPRYTHON_CONFIG.get(config_section, value_name)  # type: ignore
 
 
-def component(the_type: Callable[..., TypeT]) -> Callable[..., TypeT]:
+def component() -> Callable[[Callable[..., TypeT]], Callable[..., TypeT]]:
     """Annotation to register a class to be available for DI to constructors."""
-    if not inspect.isclass(the_type):
-        raise TypeError(f'Only classes can be registered.')
-    if inspect.isabstract(the_type):
-        raise TypeError(f'Can not register abstract class as component.')
-    global ENTERPRYTHON_COMPONENTS  # pylint: disable=global-statement
-    if the_type in ENTERPRYTHON_COMPONENTS:
-        raise TypeError(f'{the_type.__name__} '
-                        'already registered as component.')
-    ENTERPRYTHON_COMPONENTS[the_type] = None
-    return the_type
+    def register(the_type: Callable[..., TypeT]) -> Callable[..., TypeT]:
+        """Register component and forward type."""
+        if not inspect.isclass(the_type):
+            raise TypeError(f'Only classes can be registered.')
+        if inspect.isabstract(the_type):
+            raise TypeError(f'Can not register abstract class as component.')
+        global ENTERPRYTHON_COMPONENTS  # pylint: disable=global-statement
+        if the_type in ENTERPRYTHON_COMPONENTS:
+            raise TypeError(f'{the_type.__name__} '
+                            'already registered as component.')
+        ENTERPRYTHON_COMPONENTS[the_type] = None
+        return the_type
+    return register

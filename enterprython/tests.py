@@ -23,7 +23,7 @@ class ServiceInterface(ABC):  # pylint: disable=too-few-public-methods
         pass
 
 
-@component  # pylint: disable=too-few-public-methods
+@component()  # pylint: disable=too-few-public-methods
 class Service(ServiceInterface):
     """Example service"""
 
@@ -105,8 +105,8 @@ class FullTest(unittest.TestCase):
     def test_double_registration(self) -> None:
         """Multiple calls to assemble shall return the same object."""
         with self.assertRaises(TypeError):
-            @component
-            @component
+            @component()
+            @component()
             class Duplicate:  # pylint: disable=too-few-public-methods,unused-variable
                 """Class to be registered multiple times."""
                 pass

@@ -13,7 +13,7 @@ __email__ = "editgym@gmail.com"
 __license__ = "MIT"
 
 
-@component
+@component()
 class Service:
     def __init__(self) -> None:
         self._greeting: str = value(str, 'service', 'greeting')

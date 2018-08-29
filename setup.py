@@ -8,7 +8,7 @@ setuptools.setup(
     version="0.1.0",
     author="Tobias Hermann",
     author_email="editgym@gmail.com",
-    description="Type-based dependency-injection framework",
+    description="Type-based dependency-injection",
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="http://github.com/Dobiasd/enterprython",

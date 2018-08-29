@@ -9,7 +9,7 @@
 
 enterprython
 ============
-**Type-based dependency-injection framework**
+**Python library providing type-based dependency-injection**
 
 
 Table of contents
@@ -29,7 +29,7 @@ import configparser
 from enterprython import assemble, component, configure, value
 
 
-@component
+@component()
 class Service:
     def __init__(self) -> None:
         self._greeting: str = value(str, 'service', 'greeting')
