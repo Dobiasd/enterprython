@@ -265,7 +265,7 @@ class FullTest(unittest.TestCase):
         self.assertEqual('A', client.service_a.value)
         self.assertEqual('CDefault', client.service_c.value)
 
-    def test_component_overwrite_default(self) -> None:
+    def test_overwrite_default(self) -> None:
         """Prefer components over default arguments."""
         client = assemble(ClientABDefaultB)
         self.assertEqual('A', client.service_a.value)
