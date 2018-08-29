@@ -48,12 +48,7 @@ class Client:
         print(self._service.greet("World"))
 
 
-def main():
-    assemble(Client).run()
-    
-
-if __name__ == "__main__":
-    main()
+assemble(Client).run()
 ```
 
 Output:
