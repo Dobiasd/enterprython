@@ -15,24 +15,26 @@ enterprython
 Table of contents
 -----------------
   * [Introduction](#introduction)
+  * [Features](#features)
   * [Requirements and Installation](#requirements-and-installation)
 
 
 Introduction
 ------------
 
-todo: explain IoC, SLP, DI with config, DI with annotations and static types
+If you plan to write enterprisey software, you probably want to apply [dependency injection](https://en.wikipedia.org/wiki/Dependency_injection) on your class constructors,
+and use a library doing the lookup for you based on static type annotations, instead of configuring the object graph manually.
+
+`enterprython` provides exactly that.
 
 ```python
-import configparser
-
 from enterprython import assemble, component, configure, value
 
 
 @component()
 class Service:
     def __init__(self) -> None:
-        self._greeting: str = value(str, 'service', 'greeting')
+        self._greeting: str = "Hello"
 
     def greet(self, name: str) -> str:
         return f"{self._greeting}, {name}!"
@@ -47,14 +49,18 @@ class Client:
 
 
 def main():
-    config = configparser.ConfigParser()
-    config.read_string("""
-        [service]
-        greeting = Hello
-    """)
-    configure(config)
     assemble(Client).run()
+    
+
+if __name__ == "__main__":
+    main()
 ```
+
+
+features
+--------
+
+todo
 
 
 Requirements and Installation

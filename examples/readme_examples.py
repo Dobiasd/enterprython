@@ -3,9 +3,7 @@
 """
 enterprython - examples from README.md
 """
-import configparser
-
-from enterprython import assemble, component, configure, value
+from enterprython import assemble, component
 
 __author__ = "Tobias Hermann"
 __copyright__ = "Copyright 2018, Tobias Hermann"
@@ -16,7 +14,7 @@ __license__ = "MIT"
 @component()
 class Service:
     def __init__(self) -> None:
-        self._greeting: str = value(str, 'service', 'greeting')
+        self._greeting: str = "Hello"
 
     def greet(self, name: str) -> str:
         return f"{self._greeting}, {name}!"
@@ -31,12 +29,6 @@ class Client:
 
 
 def main():
-    config = configparser.ConfigParser()
-    config.read_string("""
-        [service]
-        greeting = Hello
-    """)
-    configure(config)
     assemble(Client).run()
 
 
