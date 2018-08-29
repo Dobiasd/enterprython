@@ -92,7 +92,6 @@ def assemble(constructor: Callable[..., TypeT], **kwargs: Any) -> TypeT:
         parameter_component = _get_component(parameter_type)
         if parameter_component is not None:
             arguments[parameter_name] = assemble(parameter_component.get_type())
-            break
     result = constructor(**arguments)
     if stored_component:
         stored_component.set_instance_if_singleton(result)

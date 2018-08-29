@@ -5,6 +5,7 @@ enterprython - tests
 import configparser
 import unittest
 from abc import ABC, abstractmethod
+from typing import NamedTuple
 
 from enterprython import assemble, component, configure, value
 
@@ -67,6 +68,42 @@ class ClientNonSingleton:  # pylint: disable=too-few-public-methods
 
     def __init__(self, service: ServiceNonSingleton) -> None:
         self._service = service
+
+
+@component()  # pylint: disable=too-few-public-methods
+class Layer3(NamedTuple):
+    """Depends on nothing."""
+    value: int = 42
+
+
+@component()  # pylint: disable=too-few-public-methods
+class Layer2(NamedTuple):
+    """Depends on Layer3"""
+    service: Layer3
+
+
+class Layer1(NamedTuple):  # pylint: disable=too-few-public-methods
+    """Depends on Layer2"""
+    service: Layer2
+
+
+@component()  # pylint: disable=too-few-public-methods
+class ServiceA(NamedTuple):
+    """Depends on nothing."""
+    value: str = "A"
+
+
+@component()  # pylint: disable=too-few-public-methods
+class ServiceB(NamedTuple):
+    """Depends on nothing."""
+    value: str = "B"
+
+
+@component()  # pylint: disable=too-few-public-methods
+class ClientAB(NamedTuple):
+    """Depends on ServiceA and ServiceB."""
+    service_a: ServiceA
+    service_b: ServiceB
 
 
 class ClientKWArg:  # pylint: disable=too-few-public-methods
@@ -134,3 +171,17 @@ class FullTest(unittest.TestCase):
         """Concrete object shall be injected."""
         self.assertEqual("Hello, World!",
                          assemble(ClientDependingOnInterface).greet_world())
+
+    def test_namedtuple(self) -> None:
+        """Nested injection."""
+        self.assertEqual(42, assemble(Layer2).service.value)
+
+    def test_multiple_layers(self) -> None:
+        """Nested injection."""
+        self.assertEqual(42, assemble(Layer1).service.service.value)
+
+    def test_multiple_services(self) -> None:
+        """Multi-injection."""
+        client = assemble(ClientAB)
+        self.assertEqual("A", client.service_a.value)
+        self.assertEqual("B", client.service_b.value)

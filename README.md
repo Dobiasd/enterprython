@@ -63,10 +63,10 @@ Hello, World!
 ```
 
 
-features
+Features
 --------
 
-### Non-singletons
+### Non-singleton services
 
 If a service is annotated with `@component(singleton=False)` a new instance of it is created with every injection. 
 
