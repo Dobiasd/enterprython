@@ -156,7 +156,7 @@ assemble(Client, service_b=ServiceB())
 
 `service_a` comes from the DI container, `service_b` from user code.
 
-If `ServiceB` would also have a `@component()` annotation, the manually provided object is preferred. 
+If `ServiceB` also has a `@component()` annotation, the manually provided object is preferred. 
 
 
 Requirements and Installation

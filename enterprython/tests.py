@@ -99,11 +99,30 @@ class ServiceB(NamedTuple):
     value: str = "B"
 
 
+class ServiceCNoComponent(NamedTuple):
+    """Depends on nothing."""
+    value: str = "C"
+
+
 @component()  # pylint: disable=too-few-public-methods
 class ClientAB(NamedTuple):
     """Depends on ServiceA and ServiceB."""
     service_a: ServiceA
     service_b: ServiceB
+
+
+@component()  # pylint: disable=too-few-public-methods
+class ClientABDefaultB(NamedTuple):
+    """Depends on ServiceA and ServiceB."""
+    service_a: ServiceA
+    service_b: ServiceB = ServiceB('BDefault')
+
+
+@component()  # pylint: disable=too-few-public-methods
+class ClientACDefaultC(NamedTuple):
+    """Depends on ServiceA and ServiceB."""
+    service_a: ServiceA
+    service_c: ServiceCNoComponent = ServiceCNoComponent('CDefault')
 
 
 class ClientKWArg:  # pylint: disable=too-few-public-methods
@@ -230,6 +249,18 @@ class FullTest(unittest.TestCase):
         client = assemble(ClientAB, service_b=ServiceB('BManual'))
         self.assertEqual('A', client.service_a.value)
         self.assertEqual('BManual', client.service_b.value)
+
+    def test_default_arguments(self) -> None:
+        """Use default arguments in clients if nothing else is given."""
+        client = assemble(ClientACDefaultC)
+        self.assertEqual('A', client.service_a.value)
+        self.assertEqual('CDefault', client.service_c.value)
+
+    def test_component_overwrite_default(self) -> None:
+        """Prefer components over default arguments."""
+        client = assemble(ClientABDefaultB)
+        self.assertEqual('A', client.service_a.value)
+        self.assertEqual('B', client.service_b.value)
 
     def test_ambiguous(self) -> None:
         """Ambiguous dependency."""
