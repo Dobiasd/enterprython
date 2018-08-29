@@ -53,79 +53,25 @@ ENTERPRYTHON_CONFIG: Optional[configparser.ConfigParser] = None
 ENTERPRYTHON_COMPONENTS: List[_Component] = []
 
 
-def _get_components(constructor: Callable[..., TypeT]) -> List[_Component]:
-    """Return stored component for type if available."""
-    return [stored_component
-            for stored_component in ENTERPRYTHON_COMPONENTS
-            if stored_component.matches(constructor)]
-
-
-def _get_component(constructor: Callable[..., TypeT]) -> Optional[_Component]:
-    """Return stored component for type if available."""
-    components = _get_components(constructor)
-    if len(components) > 1:
-        raise TypeError(f'Ambiguous dependency {constructor.__name__}.')
-    if not components:
-        return None
-    return components[0]
-
-
-def _add_component(constructor: Callable[..., TypeT], singleton: bool) -> None:
-    """Store new component for DI."""
-    global ENTERPRYTHON_COMPONENTS  # pylint: disable=global-statement
-    if _get_component(constructor) is not None:
-        raise TypeError(f'{constructor.__name__} '
-                        'already registered as component.')
-    ENTERPRYTHON_COMPONENTS.append(_Component(constructor, singleton))
-
-
-def _is_list_type(the_type: Callable[..., TypeT]) -> bool:
-    """Return True if the type is a List."""
-    try:
-        if VER_3_7_AND_UP:
-            return _is_instance(the_type,
-                                _GenericAlias) and _type_origin_is(the_type, list)
-        return issubclass(the_type, List)  # type: ignore
-    except TypeError:
-        return False
-
-
-def _is_instance(the_value: TypeT, the_type: Callable[..., TypeT]) -> bool:
-    return isinstance(the_value, the_type)  # type: ignore
-
-
-def _type_origin_is(the_type: Callable[..., TypeT], origin: Any) -> bool:
-    assert hasattr(the_type, '__origin__')
-    return the_type.__origin__ is origin  # type: ignore
-
-
-def _get_list_type_elem_type(list_type: Callable[..., TypeT]) -> Callable[..., Any]:
-    """Return the type of a single element of the list type."""
-    assert _is_list_type(list_type)
-    list_args = list_type.__args__  # type: ignore
-    assert len(list_args) == 1
-    return list_args[0]  # type: ignore
-
-
 def configure(config: configparser.ConfigParser) -> None:
     """Set global enterprython value configuration."""
     global ENTERPRYTHON_CONFIG  # pylint: disable=global-statement
     ENTERPRYTHON_CONFIG = config
 
 
-def assemble(constructor: Callable[..., TypeT], **kwargs: Any) -> TypeT:
+def assemble(the_type: Callable[..., TypeT], **kwargs: Any) -> TypeT:
     """Create an instance of a certain type,
     using constructor injection if needed."""
 
     global ENTERPRYTHON_COMPONENTS  # pylint: disable=global-statement
 
-    stored_component = _get_component(constructor)
+    stored_component = _get_component(the_type)
     if stored_component:
         instance = stored_component.get_instance()
         if instance is not None:
             return instance  # type: ignore
 
-    signature = inspect.signature(constructor)
+    signature = inspect.signature(the_type)
 
     parameters: Dict[str, Type[Any]] = {}
     for param in signature.parameters.values():
@@ -147,7 +93,7 @@ def assemble(constructor: Callable[..., TypeT], **kwargs: Any) -> TypeT:
             parameter_component = _get_component(parameter_type)
             if parameter_component is not None:
                 arguments[parameter_name] = assemble(parameter_component.get_type())
-    result = constructor(**arguments)
+    result = the_type(**arguments)
     if stored_component:
         stored_component.set_instance_if_singleton(result)
     return result
@@ -180,3 +126,56 @@ def component(singleton: bool = True) -> Callable[[Callable[..., TypeT]],
         return the_type
 
     return register
+
+
+def _get_components(the_type: Callable[..., TypeT]) -> List[_Component]:
+    """Return stored component for type if available."""
+    return [stored_component
+            for stored_component in ENTERPRYTHON_COMPONENTS
+            if stored_component.matches(the_type)]
+
+
+def _get_component(the_type: Callable[..., TypeT]) -> Optional[_Component]:
+    """Return stored component for type if available."""
+    components = _get_components(the_type)
+    if len(components) > 1:
+        raise TypeError(f'Ambiguous dependency {the_type.__name__}.')
+    if not components:
+        return None
+    return components[0]
+
+
+def _add_component(the_type: Callable[..., TypeT], singleton: bool) -> None:
+    """Store new component for DI."""
+    global ENTERPRYTHON_COMPONENTS  # pylint: disable=global-statement
+    if _get_component(the_type) is not None:
+        raise TypeError(f'{the_type.__name__} '
+                        'already registered as component.')
+    ENTERPRYTHON_COMPONENTS.append(_Component(the_type, singleton))
+
+
+def _is_list_type(the_type: Callable[..., TypeT]) -> bool:
+    try:
+        if VER_3_7_AND_UP:
+            return _is_instance(the_type,
+                                _GenericAlias) and _type_origin_is(the_type, list)
+        return issubclass(the_type, List)  # type: ignore
+    except TypeError:
+        return False
+
+
+def _is_instance(the_value: TypeT, the_type: Callable[..., TypeT]) -> bool:
+    return isinstance(the_value, the_type)  # type: ignore
+
+
+def _type_origin_is(the_type: Callable[..., TypeT], origin: Any) -> bool:
+    assert hasattr(the_type, '__origin__')
+    return the_type.__origin__ is origin  # type: ignore
+
+
+def _get_list_type_elem_type(list_type: Callable[..., TypeT]) -> Callable[..., Any]:
+    """Return the type of a single element of the list type."""
+    assert _is_list_type(list_type)
+    list_args = list_type.__args__  # type: ignore
+    assert len(list_args) == 1
+    return list_args[0]  # type: ignore
