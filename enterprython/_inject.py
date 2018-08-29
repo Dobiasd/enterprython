@@ -26,12 +26,19 @@ class _Component(Generic[TypeT]):  # pylint: disable=unsubscriptable-object
         """Figure out and store base classes."""
         self._type = the_type
         self._is_singleton = singleton
-        self._base_classes = inspect.getmro(the_type)  # type: ignore
+        self._target_types: List[Any] = []
+        if inspect.isclass(the_type):
+            self._target_types = inspect.getmro(the_type)  # type: ignore
+        else:
+            return_type = inspect.signature(the_type).return_annotation
+            if return_type is inspect.Signature.empty:
+                raise TypeError(f'Unknown return type of {the_type.__name__}')
+            self._target_types = [return_type]
         self._instance: Optional[TypeT] = None
 
     def matches(self, the_type: Callable[..., TypeT]) -> bool:
         """Check if component can be used for injection of the_type."""
-        return the_type in self._base_classes
+        return the_type in self._target_types
 
     def set_instance_if_singleton(self, instance: TypeT) -> None:
         """If this component is a singleton, set it's instance."""
@@ -121,8 +128,9 @@ def component(singleton: bool = True) -> Callable[[Callable[..., TypeT]],
 
     def register(the_type: Callable[..., TypeT]) -> Callable[..., TypeT]:
         """Register component and forward type."""
-        if not inspect.isclass(the_type):
-            raise TypeError(f'Only classes can be registered.')
+        if not inspect.isclass(the_type) and not inspect.isfunction(the_type):
+            raise TypeError('Only classes and factory function '
+                            'can be registered.')
         if inspect.isabstract(the_type):
             raise TypeError(f'Can not register abstract class as component.')
         global ENTERPRYTHON_COMPONENTS  # pylint: disable=global-statement

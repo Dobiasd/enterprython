@@ -63,6 +63,22 @@ class Client:  # pylint: disable=too-few-public-methods
         return self._service.greet("World")
 
 
+class ServiceFromFactory(NamedTuple):  # pylint: disable=too-few-public-methods
+    """Depends on nothing."""
+    value: int = 42
+
+
+@component()
+def service_factory() -> ServiceFromFactory:
+    """Create a service."""
+    return ServiceFromFactory()
+
+
+class ClientServiceFromFactory(NamedTuple):  # pylint: disable=too-few-public-methods
+    """Depends on ServiceFromFactory."""
+    service: ServiceFromFactory
+
+
 def client_func(service: Service) -> str:
     """Use function argument injection."""
     return service.greet("World")
@@ -204,6 +220,10 @@ class FullTest(unittest.TestCase):
     def test_assemble_func(self) -> None:
         """Free function instead of constructor."""
         self.assertEqual("Hello, World!", assemble(client_func))
+
+    def test_factory(self) -> None:
+        """Factory function as component."""
+        self.assertEqual(42, assemble(ClientServiceFromFactory).service.value)
 
     def test_value(self) -> None:
         """Using value from configuration."""

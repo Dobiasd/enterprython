@@ -175,7 +175,32 @@ def client(service: Service) -> None:
 assemble(client)
 ```
 
-A singleton instance of `Service` is created and used to call `client`. 
+A singleton instance of `Service` is created and used to call `client`.
+
+
+### Factories
+
+Annotating a function with `@component()` is registered as a factory for its return type.
+
+```python
+
+from enterprython import assemble, component
+
+class Service:
+    ...
+    
+@component()
+def service_factory() -> Service:
+    return Service
+
+class Client:
+    def __init__(self, service: Service) -> None:
+        ...
+        
+assemble(Client)
+```
+
+`service_factory` is used to create the `Service` instance for calling the constructor of `Client`.
 
 
 Requirements and Installation
