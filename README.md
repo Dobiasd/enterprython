@@ -26,7 +26,7 @@ todo: explain IoC, SLP, DI with config, DI with annotations and static types
 ```python
 import configparser
 
-from enterprython import component, configure, create, value
+from enterprython import assemble, component, configure, value
 
 
 @component
@@ -53,7 +53,7 @@ def main():
         greeting = Hello
     """)
     configure(config)
-    create(Client).run()
+    assemble(Client).run()
 ```
 
 

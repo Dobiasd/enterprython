@@ -5,7 +5,7 @@ enterprython - tests
 import configparser
 import unittest
 
-from enterprython import component, configure, create, value
+from enterprython import assemble, component, configure, value
 
 __author__ = "Tobias Hermann"
 __copyright__ = "Copyright 2018, Tobias Hermann"
@@ -49,4 +49,4 @@ class FullTest(unittest.TestCase):
             greeting = Hello
         """)
         configure(config)
-        self.assertEqual("Hello, World!", create(Client).greet_world())
+        self.assertEqual("Hello, World!", assemble(Client).greet_world())

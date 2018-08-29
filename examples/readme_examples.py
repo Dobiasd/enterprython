@@ -5,7 +5,7 @@ enterprython - examples from README.md
 """
 import configparser
 
-from enterprython import component, configure, create, value
+from enterprython import assemble, component, configure, value
 
 __author__ = "Tobias Hermann"
 __copyright__ = "Copyright 2018, Tobias Hermann"
@@ -37,7 +37,7 @@ def main():
         greeting = Hello
     """)
     configure(config)
-    create(Client).run()
+    assemble(Client).run()
 
 
 if __name__ == "__main__":

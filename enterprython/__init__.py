@@ -1,4 +1,4 @@
-from ._functions import component, configure, create, value
+from ._functions import assemble, component, configure, value
 
 name = "enterprython"
 

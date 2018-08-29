@@ -18,7 +18,7 @@ def configure(config: configparser.ConfigParser) -> None:
     ENTERPRYTHON_CONFIG = config
 
 
-def create(constructor: Callable[..., TypeT]) -> TypeT:
+def assemble(constructor: Callable[..., TypeT]) -> TypeT:
     """Create an instance of a certain type,
     using constructor injection if needed."""
     signature = inspect.signature(constructor)
@@ -36,7 +36,7 @@ def create(constructor: Callable[..., TypeT]) -> TypeT:
     for parameter_name, parameter_type in parameters.items():
         for comp in ENTERPRYTHON_COMPONENTS:
             if comp == parameter_type:
-                arguments[parameter_name] = create(comp)
+                arguments[parameter_name] = assemble(comp)
     return constructor(**arguments)
 
 
