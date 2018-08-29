@@ -9,7 +9,7 @@ from typing import Any, Callable, Dict, List, Type, TypeVar, Optional
 TypeT = TypeVar('TypeT')
 
 ENTERPRYTHON_CONFIG: Optional[configparser.ConfigParser] = None
-ENTERPRYTHON_COMPONENTS: List[Callable[..., TypeT]] = []
+ENTERPRYTHON_COMPONENTS: Dict[Callable[..., TypeT], Optional[TypeT]] = {}
 
 
 def configure(config: configparser.ConfigParser) -> None:
@@ -21,6 +21,13 @@ def configure(config: configparser.ConfigParser) -> None:
 def assemble(constructor: Callable[..., TypeT], **kwargs: Any) -> TypeT:
     """Create an instance of a certain type,
     using constructor injection if needed."""
+
+    global ENTERPRYTHON_COMPONENTS  # pylint: disable=global-statement
+
+    if constructor in ENTERPRYTHON_COMPONENTS:
+        if ENTERPRYTHON_COMPONENTS[constructor]:
+            return ENTERPRYTHON_COMPONENTS[constructor]
+
     signature = inspect.signature(constructor)
 
     parameters: Dict[str, Callable[..., TypeT]] = {}
@@ -38,7 +45,10 @@ def assemble(constructor: Callable[..., TypeT], **kwargs: Any) -> TypeT:
             if comp == parameter_type:
                 arguments[parameter_name] = assemble(comp)
                 break
-    return constructor(**arguments)
+    result = constructor(**arguments)
+    if constructor in ENTERPRYTHON_COMPONENTS:
+        ENTERPRYTHON_COMPONENTS[constructor] = result
+    return result
 
 
 def value(the_type: Type[TypeT], config_section: str, value_name: str) -> TypeT:
@@ -56,5 +66,8 @@ def value(the_type: Type[TypeT], config_section: str, value_name: str) -> TypeT:
 def component(constructor: Callable[..., TypeT]) -> Callable[..., TypeT]:
     """Annotation to register a class to be available for DI to constructors."""
     global ENTERPRYTHON_COMPONENTS  # pylint: disable=global-statement
-    ENTERPRYTHON_COMPONENTS.append(constructor)
+    if constructor in ENTERPRYTHON_COMPONENTS:
+        raise TypeError(f'{constructor.__name__} '
+                        'already registered as component.')
+    ENTERPRYTHON_COMPONENTS[constructor] = None
     return constructor

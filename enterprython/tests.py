@@ -64,3 +64,15 @@ class FullTest(unittest.TestCase):
         configure(config)
         self.assertEqual("Hello, World!",
                          assemble(Client_kwarg, name="World").greet_world())
+
+    def test_uniqueness(self) -> None:
+        """Multiple calls to assemble shall return the same object."""
+        self.assertTrue(assemble(Client)._service is assemble(Client)._service)
+
+    def test_double_registration(self) -> None:
+        """Multiple calls to assemble shall return the same object."""
+        with self.assertRaises(TypeError):
+            @component
+            @component
+            class foo:
+                pass
