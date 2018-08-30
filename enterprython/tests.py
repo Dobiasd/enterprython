@@ -72,7 +72,7 @@ class ServiceFromFactory(NamedTuple):  # pylint: disable=too-few-public-methods
 @factory()
 def service_factory() -> ServiceFromFactory:
     """Create a service."""
-    return ServiceFromFactory()
+    return ServiceFromFactory(40)
 
 
 class ClientServiceFromFactory(NamedTuple):  # pylint: disable=too-few-public-methods
@@ -267,9 +267,13 @@ class BasicTest(unittest.TestCase):
 class FactoryTest(unittest.TestCase):
     """Check factory functionality."""
 
+    def test_construct_service(self) -> None:
+        """Factory function creates service."""
+        self.assertEqual(40, assemble(ServiceFromFactory).value)
+
     def test_factory(self) -> None:
-        """Factory function as component."""
-        self.assertEqual(42, assemble(ClientServiceFromFactory).service.value)
+        """Factory function produces dependency."""
+        self.assertEqual(40, assemble(ClientServiceFromFactory).service.value)
 
     def test_factory_singleton(self) -> None:
         """Factory function as component."""
