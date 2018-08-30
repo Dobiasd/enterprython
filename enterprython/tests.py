@@ -332,6 +332,14 @@ class ErrorTest(unittest.TestCase):
         with self.assertRaises(TypeError):
             assemble(ClientDependingOnOneOfTwoServices)
 
+    def test_additional_factory(self) -> None:
+        """Ambiguous dependency due to a factory."""
+        with self.assertRaises(TypeError):
+            @component()
+            def service_factory_forbidden() -> Service:
+                """Conflict with component."""
+                return Service()
+
 
 class AbstractTest(unittest.TestCase):
     """Check interfaces."""

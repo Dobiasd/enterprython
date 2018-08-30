@@ -185,10 +185,11 @@ def _get_component(the_type: Callable[..., TypeT]) -> Optional[_Component]:
 def _add_component(the_type: Callable[..., TypeT], singleton: bool) -> None:
     """Store new component for DI."""
     global ENTERPRYTHON_COMPONENTS  # pylint: disable=global-statement
-    if _get_component(the_type) is not None:
+    new_component = _Component(the_type, singleton)
+    if _get_component(new_component.get_type()) is not None:
         raise TypeError(f'{the_type.__name__} '
                         'already registered as component.')
-    ENTERPRYTHON_COMPONENTS.append(_Component(the_type, singleton))
+    ENTERPRYTHON_COMPONENTS.append(new_component)
 
 
 def _is_list_type(the_type: Callable[..., TypeT]) -> bool:
