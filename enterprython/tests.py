@@ -101,9 +101,16 @@ def client_func(service: Service) -> str:
 
 
 class ClientNonSingleton:  # pylint: disable=too-few-public-methods
-    """Depends on ServiceNonSingleton"""
+    """Depends on ServiceNonSingleton."""
 
     def __init__(self, service: ServiceNonSingleton) -> None:
+        self._service = service
+
+
+class ClientWithoutTypeAnnotation:  # pylint: disable=too-few-public-methods
+    """Depends on some unknown thing."""
+
+    def __init__(self, service) -> None:  # type: ignore
         self._service = service
 
 
@@ -272,8 +279,13 @@ class FullTest(unittest.TestCase):
         configure(config)
         self.assertEqual('42', assemble(WithValue).show_value())
 
+    def test_unknown_service_type(self) -> None:
+        """A service parameter needs a type annotation."""
+        with self.assertRaises(TypeError):
+            assemble(ClientWithoutTypeAnnotation)
+
     def test_double_registration(self) -> None:
-        """Multiple calls to assemble shall return the same object."""
+        """A class may only be registered once."""
         with self.assertRaises(TypeError):
             @component()
             @component()

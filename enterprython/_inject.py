@@ -88,6 +88,8 @@ def assemble(the_type: Callable[..., TypeT], **kwargs: Any) -> TypeT:
         if param.kind != inspect.Parameter.POSITIONAL_OR_KEYWORD:
             raise TypeError('Only parameters of kind POSITIONAL_OR_KEYWORD '
                             'supported in target functions.')
+        if param.annotation is inspect.Signature.empty:
+            raise TypeError('Parameter needs needs a type annotation.')
         parameters[param.name] = param.annotation
 
     arguments: Dict[str, Any] = kwargs
