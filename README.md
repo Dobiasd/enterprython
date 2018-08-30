@@ -29,7 +29,7 @@ Table of contents
 Introduction
 ------------
 
-If you plan to write enterprisey software, you probably want to apply [dependency injection](https://en.wikipedia.org/wiki/Dependency_injection) on your class constructors,
+If you plan to develop [SOLID](https://en.wikipedia.org/wiki/SOLID)/[domain-driven](https://en.wikipedia.org/wiki/Domain-driven_design) (i.e., enterprisey) software, you probably want to apply [dependency injection](https://en.wikipedia.org/wiki/Dependency_injection) on your class constructors,
 and use a library doing the lookup for you based on static type annotations, instead of configuring the object graph manually.
 
 `enterprython` provides exactly that.
@@ -106,7 +106,7 @@ class Service:
     
 @component()
 def service_factory() -> Service:
-    return Service
+    return Service()
 
 class Client:
     def __init__(self, service: Service) -> None:
