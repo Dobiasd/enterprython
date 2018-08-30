@@ -5,7 +5,7 @@ enterprython - Type-based dependency-injection
 import configparser
 import inspect
 import sys
-from typing import Any, Callable, Dict, Optional, Type, TypeVar, List, Generic
+from typing import Any, Callable, Dict, Optional, Type, TypeVar, List, Generic, Union
 
 VER_3_7_AND_UP = sys.version_info[:3] >= (3, 7, 0)  # PEP 560
 
@@ -57,14 +57,42 @@ class _Component(Generic[TypeT]):  # pylint: disable=unsubscriptable-object
         return self._type
 
 
-ENTERPRYTHON_CONFIG: Optional[configparser.ConfigParser] = None
+ValueType = Union[str, float, int, bool]
+
+ENTERPRYTHON_VALUES: Dict[str, Dict[str, ValueType]] = {}
 ENTERPRYTHON_COMPONENTS: List[_Component] = []
 
 
-def configure(config: configparser.ConfigParser) -> None:
-    """Set global enterprython value configuration."""
-    global ENTERPRYTHON_CONFIG  # pylint: disable=global-statement
-    ENTERPRYTHON_CONFIG = config
+def add_values(new_values: Dict[str, Dict[str, ValueType]]) -> None:
+    """Extent current value store (section, name, value)."""
+    global ENTERPRYTHON_VALUES  # pylint: disable=global-statement
+    for section, names_with_values in new_values.items():
+        if section in ENTERPRYTHON_VALUES:
+            for name, new_value in names_with_values.items():
+                if name in ENTERPRYTHON_VALUES[section]:
+                    raise ValueError(f'Duplicate value: {section}.{name}')
+    for section, names_with_values in new_values.items():
+        for name, new_value in names_with_values.items():
+            if section not in ENTERPRYTHON_VALUES:
+                ENTERPRYTHON_VALUES[section] = {}
+            ENTERPRYTHON_VALUES[section][name] = new_value
+
+
+def add_value(section: str, name: str, new_value: ValueType) -> None:
+    """Add a single new value to the store."""
+    add_values({section: {name: new_value}})
+
+
+def set_values(values: Dict[str, Dict[str, ValueType]]) -> None:
+    """Set global enterprython value store (section, name, value)."""
+    global ENTERPRYTHON_VALUES  # pylint: disable=global-statement
+    ENTERPRYTHON_VALUES = {}
+    add_values(values)
+
+
+def set_values_from_config(config: configparser.ConfigParser) -> None:
+    """Set global enterprython value store from a ConfigParser."""
+    set_values({s: dict(config.items(s)) for s in config.sections()})
 
 
 def assemble(the_type: Callable[..., TypeT], **kwargs: Any) -> TypeT:
@@ -116,13 +144,7 @@ def assemble(the_type: Callable[..., TypeT], **kwargs: Any) -> TypeT:
 def value(the_type: Callable[..., TypeT], config_section: str, value_name: str) -> TypeT:
     """Get a config value from the global enterprython config store."""
     assert the_type in [bool, float, int, str]
-    if the_type == bool:
-        return ENTERPRYTHON_CONFIG.getboolean(config_section, value_name)  # type: ignore
-    if the_type == float:
-        return ENTERPRYTHON_CONFIG.getfloat(config_section, value_name)  # type: ignore
-    if the_type == int:
-        return ENTERPRYTHON_CONFIG.getint(config_section, value_name)  # type: ignore
-    return ENTERPRYTHON_CONFIG.get(config_section, value_name)  # type: ignore
+    return the_type(ENTERPRYTHON_VALUES[config_section][value_name])
 
 
 def component(singleton: bool = True) -> Callable[[Callable[..., TypeT]],

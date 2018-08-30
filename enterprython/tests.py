@@ -7,7 +7,8 @@ import unittest
 from abc import ABC, abstractmethod
 from typing import NamedTuple, List
 
-from enterprython import assemble, component, configure, value
+from enterprython import assemble, component, value
+from enterprython import set_values_from_config, add_values, set_values
 
 __author__ = "Tobias Hermann"
 __copyright__ = "Copyright 2018, Tobias Hermann"
@@ -233,7 +234,7 @@ class ClientDependingOnAllMultiServiceInterfaceImpls:  # pylint: disable=too-few
         self._services = services
 
 
-class FullTest(unittest.TestCase):
+class BasicTest(unittest.TestCase):
     """Check basic functionality."""
 
     def test_assemble(self) -> None:
@@ -254,6 +255,18 @@ class FullTest(unittest.TestCase):
             assemble(ClientNonSingleton)._service is not  # pylint: disable=protected-access
             assemble(ClientNonSingleton)._service)  # pylint: disable=protected-access
 
+    def test_namedtuple(self) -> None:
+        """Nested injection."""
+        self.assertEqual(42, assemble(Layer2).service.value)
+
+    def test_multiple_layers(self) -> None:
+        """Nested injection."""
+        self.assertEqual(42, assemble(Layer1).service.service.value)
+
+
+class FactoryTest(unittest.TestCase):
+    """Check factory functionality."""
+
     def test_factory(self) -> None:
         """Factory function as component."""
         self.assertEqual(42, assemble(ClientServiceFromFactory).service.value)
@@ -269,6 +282,10 @@ class FullTest(unittest.TestCase):
             assemble(ClientServiceFromFactoryNonSingleton).service is not  # pylint: disable=protected-access
             assemble(ClientServiceFromFactoryNonSingleton).service)  # pylint: disable=protected-access
 
+
+class ValueTest(unittest.TestCase):
+    """Check value store."""
+
     def test_value(self) -> None:
         """Using value from configuration."""
         config = configparser.ConfigParser()
@@ -276,8 +293,25 @@ class FullTest(unittest.TestCase):
             [WithValue]
             value = 42
         """)
-        configure(config)
+        set_values_from_config(config)
         self.assertEqual('42', assemble(WithValue).show_value())
+
+    def test_add_config_value(self) -> None:
+        """Manually adding a value."""
+        set_values({})
+        add_values({'WithValue': {'value': 43}})
+        self.assertEqual('43', assemble(WithValue).show_value())
+
+    def test_try_replace_value(self) -> None:
+        """Values must be unique."""
+        set_values({})
+        add_values({'WithValue': {'value': 43}})
+        with self.assertRaises(ValueError):
+            add_values({'WithValue': {'value': 43}})
+
+
+class ErrorTest(unittest.TestCase):
+    """Check exceptions."""
 
     def test_unknown_service_type(self) -> None:
         """A service parameter needs a type annotation."""
@@ -293,18 +327,19 @@ class FullTest(unittest.TestCase):
                 """Class to be registered multiple times."""
                 pass
 
+    def test_ambiguous(self) -> None:
+        """Ambiguous dependency."""
+        with self.assertRaises(TypeError):
+            assemble(ClientDependingOnOneOfTwoServices)
+
+
+class AbstractTest(unittest.TestCase):
+    """Check interfaces."""
+
     def test_interface(self) -> None:
         """Concrete object shall be injected."""
         self.assertEqual("Hello, World!",
                          assemble(ClientDependingOnInterface).greet_world())
-
-    def test_namedtuple(self) -> None:
-        """Nested injection."""
-        self.assertEqual(42, assemble(Layer2).service.value)
-
-    def test_multiple_layers(self) -> None:
-        """Nested injection."""
-        self.assertEqual(42, assemble(Layer1).service.service.value)
 
     def test_multiple_services(self) -> None:
         """Multi-injection."""
@@ -329,11 +364,6 @@ class FullTest(unittest.TestCase):
         client = assemble(ClientABDefaultB)
         self.assertEqual('A', client.service_a.value)
         self.assertEqual('B', client.service_b.value)
-
-    def test_ambiguous(self) -> None:
-        """Ambiguous dependency."""
-        with self.assertRaises(TypeError):
-            assemble(ClientDependingOnOneOfTwoServices)
 
     def test_service_list(self) -> None:
         """Inject multiple services as List."""
