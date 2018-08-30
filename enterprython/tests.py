@@ -336,7 +336,7 @@ class ErrorTest(unittest.TestCase):
         """Ambiguous dependency due to a factory."""
         with self.assertRaises(TypeError):
             @component()
-            def service_factory_forbidden() -> Service:
+            def service_factory_forbidden() -> Service:  # pylint: disable=unused-variable
                 """Conflict with component."""
                 return Service()
 
