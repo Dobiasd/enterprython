@@ -149,15 +149,29 @@ def value(the_type: Callable[..., TypeT], config_section: str, value_name: str) 
 
 def component(singleton: bool = True) -> Callable[[Callable[..., TypeT]],
                                                   Callable[..., TypeT]]:
-    """Annotation to register a class to be available for DI to constructors."""
+    """Annotation to register a class to be available for DI."""
 
     def register(the_type: Callable[..., TypeT]) -> Callable[..., TypeT]:
         """Register component and forward type."""
-        if not inspect.isclass(the_type) and not inspect.isfunction(the_type):
-            raise TypeError('Only classes and factory function '
-                            'can be registered.')
+        if not inspect.isclass(the_type):
+            raise TypeError('Only classes can be registered as components.')
         if inspect.isabstract(the_type):
             raise TypeError(f'Can not register abstract class as component.')
+        global ENTERPRYTHON_COMPONENTS  # pylint: disable=global-statement
+        _add_component(the_type, singleton)
+        return the_type
+
+    return register
+
+
+def factory(singleton: bool = True) -> Callable[[Callable[..., TypeT]],
+                                                Callable[..., TypeT]]:
+    """Annotation to register a factory to be available for DI."""
+
+    def register(the_type: Callable[..., TypeT]) -> Callable[..., TypeT]:
+        """Register component and forward type."""
+        if not inspect.isfunction(the_type):
+            raise TypeError('Only functions can be registered as factories.')
         global ENTERPRYTHON_COMPONENTS  # pylint: disable=global-statement
         _add_component(the_type, singleton)
         return the_type

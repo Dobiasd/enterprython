@@ -7,7 +7,7 @@ import unittest
 from abc import ABC, abstractmethod
 from typing import NamedTuple, List
 
-from enterprython import assemble, component, value
+from enterprython import assemble, component, factory, value
 from enterprython import set_values_from_config, add_values, set_values
 
 __author__ = "Tobias Hermann"
@@ -69,7 +69,7 @@ class ServiceFromFactory(NamedTuple):  # pylint: disable=too-few-public-methods
     value: int = 42
 
 
-@component()
+@factory()
 def service_factory() -> ServiceFromFactory:
     """Create a service."""
     return ServiceFromFactory()
@@ -85,7 +85,7 @@ class ServiceFromFactoryNonSingleton(NamedTuple):  # pylint: disable=too-few-pub
     value: int = 42
 
 
-@component(singleton=False)
+@factory(singleton=False)
 def service_factory_non_singleton() -> ServiceFromFactoryNonSingleton:
     """Create a service."""
     return ServiceFromFactoryNonSingleton()

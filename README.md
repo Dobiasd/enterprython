@@ -95,7 +95,7 @@ One singleton instance of `ServiceImpl` is created and injected into `Client`.
 
 ### Factories
 
-Annotating a function with `@component()` is registered as a factory for its return type.
+Annotating a function with `@factory()` registers a factory for its return type.
 
 ```python
 
@@ -104,7 +104,7 @@ from enterprython import assemble, component
 class Service:
     ...
     
-@component()
+@factory()
 def service_factory() -> Service:
     return Service()
 
