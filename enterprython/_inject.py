@@ -1,5 +1,5 @@
 """
-enterprython - Type-based dependency-injection
+enterprython - Type-based dependency injection
 """
 
 import configparser

@@ -9,7 +9,7 @@
 
 enterprython
 ============
-**Python library providing type-based dependency-injection**
+**Python library providing type-based dependency injection**
 
 
 Table of contents
