@@ -29,8 +29,8 @@ Table of contents
 Introduction
 ------------
 
-If you plan to develop [SOLID](https://en.wikipedia.org/wiki/SOLID)/[domain-driven](https://en.wikipedia.org/wiki/Domain-driven_design) (i.e., enterprisey) software, you probably want to apply [dependency injection](https://en.wikipedia.org/wiki/Dependency_injection) on your class constructors,
-and use a library doing the lookup for you based on static type annotations, instead of configuring the object graph manually.
+If you plan to develop [SOLID](https://en.wikipedia.org/wiki/SOLID) / [domain-driven](https://en.wikipedia.org/wiki/Domain-driven_design) (i.e., enterprisey) software, you probably want to apply [inversion of control](https://en.wikipedia.org/wiki/Inversion_of_control) in the form of [dependency injection](https://en.wikipedia.org/wiki/Dependency_injection) when writing the constructors of your classes.
+Also you likely want to use a library doing the needed lookups for you based on static type annotations, instead of manually configuring the object graph.
 
 `enterprython` provides exactly that.
 
