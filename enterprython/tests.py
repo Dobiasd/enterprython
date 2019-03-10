@@ -22,7 +22,6 @@ class ServiceInterface(ABC):  # pylint: disable=too-few-public-methods
     @abstractmethod
     def greet(self, name: str) -> str:
         """Shall return greeting message."""
-        pass
 
 
 @component()  # pylint: disable=too-few-public-methods
@@ -37,7 +36,6 @@ class Service(ServiceInterface):
 @component(singleton=False)  # pylint: disable=too-few-public-methods
 class ServiceNonSingleton:
     """Example service"""
-    pass
 
 
 class WithValue:  # pylint: disable=too-few-public-methods
@@ -325,11 +323,10 @@ class ErrorTest(unittest.TestCase):
     def test_double_registration(self) -> None:
         """A class may only be registered once."""
         with self.assertRaises(TypeError):
+            @component()  # pylint: disable=too-few-public-methods,unused-variable
             @component()
-            @component()
-            class Duplicate:  # pylint: disable=too-few-public-methods,unused-variable
+            class Duplicate:
                 """Class to be registered multiple times."""
-                pass
 
     def test_ambiguous(self) -> None:
         """Ambiguous dependency."""
