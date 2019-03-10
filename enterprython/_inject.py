@@ -84,8 +84,8 @@ class _Factory(Generic[TypeT]):  # pylint: disable=unsubscriptable-object
 ValueType = Union[str, float, int, bool]
 
 ENTERPRYTHON_VALUES: Dict[str, Dict[str, ValueType]] = {}
-ENTERPRYTHON_COMPONENTS: List[_Component] = []
-ENTERPRYTHON_FACTORIES: List[_Factory] = []
+ENTERPRYTHON_COMPONENTS: List[_Component[Any]] = []
+ENTERPRYTHON_FACTORIES: List[_Factory[Any]] = []
 
 
 def add_values(new_values: Dict[str, Dict[str, ValueType]]) -> None:
@@ -129,7 +129,7 @@ def _create(the_type: Callable[..., TypeT]) -> Optional[TypeT]:
     if stored_component:
         instance = stored_component.get_instance()
         if instance is not None:
-            return instance  # type: ignore
+            return instance
     return None
 
 
@@ -221,14 +221,14 @@ def factory(singleton: bool = True) -> Callable[[Callable[..., TypeT]],
     return register
 
 
-def _get_components(the_type: Callable[..., TypeT]) -> List[_Component]:
+def _get_components(the_type: Callable[..., TypeT]) -> List[_Component[TypeT]]:
     """Return stored component for type if available."""
     return [stored_component
             for stored_component in ENTERPRYTHON_COMPONENTS
             if stored_component.matches(the_type)]
 
 
-def _get_component(the_type: Callable[..., TypeT]) -> Optional[_Component]:
+def _get_component(the_type: Callable[..., TypeT]) -> Optional[_Component[TypeT]]:
     """Return stored component for type if available."""
     components = _get_components(the_type)
     if len(components) > 1:
@@ -238,14 +238,14 @@ def _get_component(the_type: Callable[..., TypeT]) -> Optional[_Component]:
     return components[0]
 
 
-def _get_factories(the_type: Callable[..., TypeT]) -> List[_Factory]:
+def _get_factories(the_type: Callable[..., TypeT]) -> List[_Factory[TypeT]]:
     """Return stored factories for type if available."""
     return [stored_factory
             for stored_factory in ENTERPRYTHON_FACTORIES
             if stored_factory.matches(the_type)]
 
 
-def _get_factory(the_type: Callable[..., TypeT]) -> Optional[_Factory]:
+def _get_factory(the_type: Callable[..., TypeT]) -> Optional[_Factory[TypeT]]:
     """Return stored factory for type if available."""
     factories = _get_factories(the_type)
     if len(factories) > 1:
