@@ -6,37 +6,34 @@
 [travis]: https://travis-ci.org/Dobiasd/enterprython
 [license]: LICENSE
 
-
 enterprython
 ============
-**Python library providing type-based dependency injection**
 
+**Python library providing type-based dependency injection**
 
 Table of contents
 -----------------
-  * [Introduction](#introduction)
-  * [Features](#features)
-    * [Abstract base classes](#abstract-base-classes)
-    * [Factories](#factories)
-    * [Non-singleton services](#non-singleton-services)
-    * [Service lists](#service-lists)
-    * [Mixing managed and manual injection](#mixing-managed-and-manual-injection)
-    * [Free functions as clients](#free-functions-as-clients)
-    
-  * [Requirements and Installation](#requirements-and-installation)
 
+* [Introduction](#introduction)
+* [Features](#features)
+  * [Abstract base classes](#abstract-base-classes)
+  * [Factories](#factories)
+  * [Non-singleton services](#non-singleton-services)
+  * [Service lists](#service-lists)
+  * [Mixing managed and manual injection](#mixing-managed-and-manual-injection)
+  * [Free functions as clients](#free-functions-as-clients)
+* [Requirements and Installation](#requirements-and-installation)
 
 Introduction
 ------------
 
-If you plan to develop [SOLID](https://en.wikipedia.org/wiki/SOLID) / [domain-driven](https://en.wikipedia.org/wiki/Domain-driven_design) (i.e., enterprisey) software, you probably want to apply [inversion of control](https://en.wikipedia.org/wiki/Inversion_of_control) in the form of [dependency injection](https://en.wikipedia.org/wiki/Dependency_injection) when writing the constructors of your classes.
+If you plan to develop [SOLID](https://en.wikipedia.org/wiki/SOLID) / [domain-driven](https://en.wikipedia.org/wiki/Domain-driven_design) (i.e., enterprisey) software, you probably [want](why_you_want_formal_dependency_injection_in_python_too.md) to apply [inversion of control](https://en.wikipedia.org/wiki/Inversion_of_control) in the form of [dependency injection](https://en.wikipedia.org/wiki/Dependency_injection) when writing the constructors of your classes.
 Also you likely want to use a library doing the needed lookups for you based on static type annotations, instead of manually configuring the object graph.
 
 `enterprython` provides exactly that.
 
 ```python
 from enterprython import assemble, component
-
 
 @component()
 class Service:
@@ -45,7 +42,6 @@ class Service:
 
     def greet(self, name: str) -> str:
         return f"{self._greeting}, {name}!"
-
 
 class Client:
     def __init__(self, service: Service) -> None:
@@ -60,17 +56,16 @@ assemble(Client).run()
 
 Output:
 
-```
+```text
 Hello, World!
 ```
-
 
 Features
 --------
 
 ### Abstract base classes
 
-A client may depend on an abstract base class. Enterprython will inject the matching implementation. 
+A client may depend on an abstract base class. Enterprython will inject the matching implementation.
 
 ```python
 from abc import ABC
@@ -86,12 +81,11 @@ class ServiceImpl(ServiceInterface):
 class Client:
     def __init__(self, services: ServiceInterface) -> None:
         ...
-        
+
 assemble(Client)
 ```
 
 One singleton instance of `ServiceImpl` is created and injected into `Client`.
-
 
 ### Factories
 
@@ -103,7 +97,7 @@ from enterprython import assemble, component
 
 class Service:
     ...
-    
+
 @factory()
 def service_factory() -> Service:
     return Service()
@@ -111,16 +105,15 @@ def service_factory() -> Service:
 class Client:
     def __init__(self, service: Service) -> None:
         ...
-        
+
 assemble(Client)
 ```
 
 `service_factory` is used to create the `Service` instance for calling the constructor of `Client`.
 
-
 ### Non-singleton services
 
-If a service is annotated with `@component(singleton=False)` a new instance of it is created with every injection. 
+If a service is annotated with `@component(singleton=False)` a new instance of it is created with every injection.
 
 ```python
 @component(singleton=False)
@@ -131,7 +124,6 @@ class Client:
     def __init__(self, service: Service) -> None:
         ...
 ```
-
 
 ### Service lists
 
@@ -156,12 +148,11 @@ class ServiceB(ServiceInterface):
 class Client:
     def __init__(self, services: List[ServiceInterface]) -> None:
         ...
-        
+
 assemble(Client)
 ```
 
 `[ServiceA(), ServiceB()]` is injected into `Client`.
-
 
 ### Mixing managed and manual injection
 
@@ -181,14 +172,13 @@ class ServiceB:
 class Client:
     def __init__(self, service_a: ServiceA, service_b: ServiceB) -> None:
         ...
-        
+
 assemble(Client, service_b=ServiceB())
 ```
 
 `service_a` comes from the DI container, `service_b` from user code.
 
 If `ServiceB` also has a `@component()` annotation, the manually provided object is preferred.
-
 
 ### Free functions as clients
 
@@ -204,12 +194,11 @@ class Service:
 
 def client(service: Service) -> None:
     ...
-        
+
 assemble(client)
 ```
 
 A singleton instance of `Service` is created and used to call `client`.
-
 
 Requirements and Installation
 -----------------------------
@@ -221,12 +210,12 @@ python3 -m pip install enterprython
 ```
 
 Or, if you like to use latest version from this repository:
+
 ```bash
 git clone https://github.com/Dobiasd/enterprython
 cd enterprython
 python3 -m pip install .
 ```
-
 
 License
 -------
