@@ -158,7 +158,13 @@ class DomainLogic:
                    key=lambda customer: customer.value_in_dollars)
 ```
 
-Now you can instantiate it with whatever data source is suitable for any given situation:
+(To adhere to the
+[dependency-inversion principle](https://en.wikipedia.org/wiki/Dependency_inversion_principle),
+`__init__` could be implemented against
+an [interface](https://docs.python.org/3/library/abc.html)
+instead of a concrete `Connection` implementation.)
+
+Now we can instantiate `DomainLogic` with whatever data source is suitable for any given situation:
 
 ```python
 from database_connection import Connection
@@ -174,9 +180,15 @@ class DomainLogicTest(unittest.TestCase):
         domain_logic = DomainLogic(create_mock_connection())
 ```
 
-For this simple case the manual injection works fine.
-But with larger, real-world dependency trees, we hit a problem.
-For example just creating a `Controller` can become quite cumbersome:
+So this already solves the three pain points mentioned earlier.
+
+---
+
+Now it's time to make using this technique as convenient as possible.
+
+With larger, real-world dependency trees, the shown manual injection
+can become quite cumbersome,
+like the following example, creating a hypothetical `Controller`, shows:
 
 ```python
 some_repository = SomeRepository()
@@ -192,33 +204,36 @@ my_controller = Controller(
 ```
 
 Also, some things, like repositories,
-might need to be a [singleton](https://en.wikipedia.org/wiki/Singleton_pattern) instance, i.e., we only want to instantiate
+might need to be a [singleton](https://en.wikipedia.org/wiki/Singleton_pattern) instance,
+i.e., we only want to instantiate
 them once in our whole application.
-Manually taking care of this adds an additional burden.
+Manually taking care of this in the code adds an additional burden.
 
-Defining all this in some external (maybe XML-like) configuration file is no better.
+One possible solution is to externalize this tree definitions,
+e.g., into a (maybe XML-like) configuration file,
+and have some framework taking care of wiring the instances at runtime.
 
-Coming back to our initial example,
-ideally we would like to just say something like:
+But fortunately, since we are using [static type hints](https://docs.python.org/3/library/typing.html)
+for our constructor parameters,
+we can avoid this manual work completely.
+Instead, an appropriate framework can automatically deduce the graph.
+We can then write something very simple:
 
 ```python
 business = assemble(DomainLogic)
 ```
 
-and have some framework providing the `assemble` function to do all the work.
+and let a provided `assemble` function do all the work.
 
-Since we fortunately annotated the parameters of our constructors with type hints,
-it is actually possible for a framework to provide this functionality.
-
-The types clearly state that `domain.DomainLogic` needs a
+`assemble` can recognize,
+the types clearly stating that `domain.DomainLogic` needs a
 `database_connection.Connection`,
-thus it should be possible to have it constructed and injected automagically.
+thus it can construct and inject the dependency automagically.
 
-And it is! For example,
-if we use [enterprython](https://github.com/Dobiasd/enterprython)
-as our DI framework,
-we just need to annotate our "service" (`database_connection.Connection`)
-with `@component()`. Then `assemble`, which is provided by enterprython,
+One framework, providing such functionality,
+is [enterprython](https://github.com/Dobiasd/enterprython).
+Using it, we only need to annotate our "service" (`database_connection.Connection`)
+with `@component()`. Then `assemble`, which is provided by the library,
 can already do its thing, i.e., create our "client" (`domain.DomainLogic`).
 
 ```python
@@ -248,19 +263,19 @@ if __name__ == '__main__':
 ```
 
 If the service (`database_connection.Connection` in that case) would itself
-depend on other things, they also would be auto-created singleton style
-in the libraries DI container and injected,
-rinsing and repeating until the full dependency tree is resolved,
-raising an appropriate exception in case missing is missing.  
+depend on other things, they also would be auto-created (singleton style)
+in the libraries DI container, and then injected,
+rinsing and repeating until the full dependency tree is resolved.
+In case something is missing, an appropriate exception will be raised
 
-In addition to this minimal example, with enterprython, we can also:
+In addition to this minimal example, with enterprython we can also:
 
 * work with abstract base classes, thus only [depend on abstractions](https://en.wikipedia.org/wiki/Dependency_inversion_principle).
 * decide if services should be singletons or not.
 * provide custom service factories.
 * do some additional other stuff, see [enterprython's features list](https://github.com/Dobiasd/enterprython/#features).
 
-Of course in our unit tests we can still manually
+Naturally, in our unit tests, we can still manually
 constructor-inject a `MockConnection` into the `DomainLogic` object we want to test:
 
 ```python
@@ -271,4 +286,5 @@ Of course [enterprython](https://github.com/Dobiasd/enterprython)
 might not be the only static-type-annotation-based
 DI framework available for Python. In case, with this article, I was successful in
 convincing you about the general usefulness of this pattern,
-I'd like to encourage you to check out other options too.
+I'd like to encourage you to give it a try,
+but also to check out other options too.
