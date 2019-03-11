@@ -3,7 +3,7 @@ Why you want formal dependency injection in Python too
 
 In other languages, e.g., Java, explicit dependency injection is part of daily business.
 Python projects however very rarely make use of this technique.
-I'd like to make a case for why it might be useful to rethink this approach. 
+I'd like to make a case for why it might be useful to rethink this approach.
 
 Let's say you have a class implementing some business logic,
 which depends on external data:
@@ -28,14 +28,14 @@ class DomainLogic:
                 Customer('MegaCorp', 1000000)]
 
     def most_valuable_customer(self):
-        return max(self.data_access.get_all_customers(),
+        return max(self.get_all_customers(),
                    key=lambda customer: customer.value_in_dollars)
 ```
 
 The function for retrieving the data (`get_all_customers`) might need some state,
 e.g., a database connection.
 
-Since you apply the [single-responsibility principle](https://en.wikipedia.org/wiki/Single_responsibility_principle), 
+Since you apply the [single-responsibility principle](https://en.wikipedia.org/wiki/Single_responsibility_principle),
 you don't want to manage the connection in `DomainLogic`.
 Instead, you'll use an additional [data access object](https://en.wikipedia.org/wiki/Data_access_object), encapsulating it:
 
@@ -58,16 +58,16 @@ class Connection:
 
 ```python
 # domain.py
-import database_connection
 from customer import Customer
+from database_connection import Connection
 
 class DomainLogic:
     def __init__(self) -> None:
         self.data_access = DomainLogic.init_data_access()
 
     @staticmethod
-    def init_data_access() -> database_connection.Connection:
-        return database_connection.Connection()
+    def init_data_access() -> Connection:
+        return Connection()
 
     def most_valuable_customer(self) -> Customer:
         return max(self.data_access.get_all_customers(),
@@ -78,9 +78,10 @@ class DomainLogic:
 Now you need to unit test the complex implementation of your business logic.
 For this you'll want to replace `data_access` with some mock.
 In Python there are multiple options to do so.
-A simple and common one, using monkey patching,
+A simple and common one,
+using [monkey patching](https://stackoverflow.com/questions/5626193/what-is-monkey-patching),
 is to replace the `DomainLogic.init_data_access` with something
-that returns a mock-data source:    
+that returns a mock-data source:
 
 ```python
 # test.py
@@ -142,14 +143,14 @@ but the class itself which is mutated.
 
 So the sane approach is to make the dependency explicit
 by letting the constructor of `DomainLogic` take the data-access object to use
-as a parameter:
+as a parameter instead of monkeying around with the class itself:
 
 ```python
 # domain.py
-import database_connection
+from database_connection import Connection
 
 class DomainLogic:
-    def __init__(self, data_access: database_connection.Connection):
+    def __init__(self, data_access: Connection):
         self.data_access = data_access
 
     def most_valuable_customer(self):
@@ -158,11 +159,13 @@ class DomainLogic:
 ```
 
 Now you can instantiate it with whatever data source is suitable for any given situation:
+
 ```python
-import database_connection
+from database_connection import Connection
+from domain import DomainLogic
 
 if __name__ == '__main__':
-    business = DomainLogic(database_connection.Connection())
+    business = DomainLogic(Connection())
 ```
 
 ```python
@@ -173,10 +176,9 @@ class DomainLogicTest(unittest.TestCase):
 
 For this simple case the manual injection works fine.
 But with larger, real-world dependency trees, we hit a problem.
-For example just creating a `Controller` can become quite cumbersome: 
+For example just creating a `Controller` can become quite cumbersome:
 
 ```python
-
 some_repository = SomeRepository()
 my_controller = Controller(
                     SomeService(
@@ -190,7 +192,7 @@ my_controller = Controller(
 ```
 
 Also, some things, like repositories,
-might need to be a singleton instance, i.e., we only want to instantiate
+might need to be a [singleton](https://en.wikipedia.org/wiki/Singleton_pattern) instance, i.e., we only want to instantiate
 them once in our whole application.
 Manually taking care of this adds an additional burden.
 
@@ -212,18 +214,61 @@ The types clearly state that `domain.DomainLogic` needs a
 `database_connection.Connection`,
 thus it should be possible to have it constructed and injected automagically.
 
-And it is. For example,
+And it is! For example,
 if we use [enterprython](https://github.com/Dobiasd/enterprython)
 as our DI framework,
-we only need to annotate our "service" (`database_connection.Connection`)
-with `@component()` and the also provided `assemble` can do it's thing,
-i.e., create our "client" (`domain.DomainLogic`).
+we just need to annotate our "service" (`database_connection.Connection`)
+with `@component()`. Then `assemble`, which is provided by enterprython,
+can already do its thing, i.e., create our "client" (`domain.DomainLogic`).
 
-We can also:
+```python
+# database_connection.py
+from enterprython import component
+
+@component()
+class Connection:
+    ...
+```
+
+```python
+# domain.py
+from database_connection import Connection
+
+class DomainLogic:
+    def __init__(self, data_access: Connection):
+        ...
+```
+
+```python
+from enterprython import assemble
+from domain import DomainLogic
+
+if __name__ == '__main__':
+    business = assemble(DomainLogic)
+```
+
+If the service (`database_connection.Connection` in that case) would itself
+depend on other things, they also would be auto-created singleton style
+in the libraries DI container and injected,
+rinsing and repeating until the full dependency tree is resolved,
+raising an appropriate exception in case missing is missing.  
+
+In addition to this minimal example, with enterprython, we can also:
+
 * work with abstract base classes.
 * provide custom factories.
 * decide if services should be singletons or not.
 * do much more, see [enterprython's features list](https://github.com/Dobiasd/enterprython/#features).
 
-Of course in our unit test we can still manually
-constructor-inject a `MockConnection` into the `DomainLogic` object we want to test.
+Of course in our unit tests we can still manually
+constructor-inject a `MockConnection` into the `DomainLogic` object we want to test:
+
+```python
+domain_logic = DomainLogic(create_mock_connection())
+```
+
+Of course [enterprython](https://github.com/Dobiasd/enterprython)
+might not be the only static-type-annotation-based
+DI framework available for Python. In case, with this article, I was successful in
+convincing you about the general usefulness of this pattern,
+I'd like to encourage you to check out other options too.
