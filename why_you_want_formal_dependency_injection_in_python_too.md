@@ -255,10 +255,10 @@ raising an appropriate exception in case missing is missing.
 
 In addition to this minimal example, with enterprython, we can also:
 
-* work with abstract base classes.
-* provide custom factories.
+* work with abstract base classes, thus only [depend on abstractions](https://en.wikipedia.org/wiki/Dependency_inversion_principle).
 * decide if services should be singletons or not.
-* do much more, see [enterprython's features list](https://github.com/Dobiasd/enterprython/#features).
+* provide custom service factories.
+* do some additional other stuff, see [enterprython's features list](https://github.com/Dobiasd/enterprython/#features).
 
 Of course in our unit tests we can still manually
 constructor-inject a `MockConnection` into the `DomainLogic` object we want to test:
