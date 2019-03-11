@@ -1,8 +1,8 @@
 Why you want formal dependency injection in Python too
 ======================================================
 
-In other languages, e.g., Java, dependency injection is part of daily business.
-Python projects however very rarely make use of this technique explicitly.
+In other languages, e.g., Java, explicit dependency injection is part of daily business.
+Python projects however very rarely make use of this technique.
 I'd like to make a case for why it might be useful to rethink this approach. 
 
 Let's say you have a class implementing some business logic,
