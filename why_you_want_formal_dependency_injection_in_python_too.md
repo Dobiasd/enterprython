@@ -92,9 +92,12 @@ from database_connection import Connection
 from domain import DomainLogic
 
 class MockConnection(Connection):
+    def __init__(self):
+        self.customers = [Customer('SmallTestCorp', 100),
+                          Customer('BigTestCorp', 200)]
+
     def get_all_customers(self) -> List[Customer]:
-        return [Customer('SmallTestCorp', 100),
-                Customer('BigTestCorp', 200)]
+        return self.customers
 
 def create_mock_connection() -> Connection:
     return MockConnection()
@@ -108,24 +111,38 @@ class DomainLogicTest(unittest.TestCase):
 
 ```
 
-This works, but it has a big disadvantage:
-The fact that `DomainLogic` has a dependency in the first place
-(in our case a `Connection` object) is hidden.
-One has to look into the implementation of `DomainLogic` to actually find out about it.
+This works, but it has three big disadvantages:
 
+First, the fact that `DomainLogic` has a dependency at all
+(in our case a `Connection` object) is totally hidden.
+One has to look into the implementation of `DomainLogic` to actually find out about it.
 Such [surprises](https://en.wikipedia.org/wiki/Principle_of_least_astonishment)
 make it harder for users of your class `DomainLogic`
 i.e., other developers, including your future self,
 to use and test it properly.
 
-Another disadvantage is you can no longer safely use a unit-testing framework
+Second, you can no longer safely use a unit-testing framework
 running multiple tests concurrently, because test cases might perform
 different monkey patchings on the same classes,
 and thus step on each others toes.
 
-So the sane approach is to make the dependency explicit,
+Third, in case of multiple dependencies,
+not all tests might need to patch the same number of things in the class.
+Then, even with non-concurrent test execution,
+this can end up in not correctly resetting the "state" of the class in some place
+after one test, and subsequently invalidating other tests.
+The overall success of the test suite
+will depend on the order of execution of the test cases,
+if not all developers take special care. Yikes!
+
+In general one runs into the same problems as usual
+when manually mutating (and depending on) some global state from different places.
+In this case it's just not some normal runtime value
+but the class itself which is mutated.
+
+So the sane approach is to make the dependency explicit
 by letting the constructor of `DomainLogic` take the data-access object to use
-as an argument in its constructor:
+as a parameter:
 
 ```python
 # domain.py
