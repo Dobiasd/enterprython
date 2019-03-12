@@ -296,13 +296,13 @@ class ValueTest(unittest.TestCase):
             value = 42
         """)
         set_values_from_config(config)
-        self.assertEqual('42', assemble(WithValue).show_value())
+        self.assertEqual('42', WithValue().show_value())
 
     def test_add_config_value(self) -> None:
         """Manually adding a value."""
         set_values({})
         add_values({'WithValue': {'value': 43}})
-        self.assertEqual('43', assemble(WithValue).show_value())
+        self.assertEqual('43', WithValue().show_value())
 
     def test_try_replace_value(self) -> None:
         """Values must be unique."""
