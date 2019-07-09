@@ -38,17 +38,17 @@ from enterprython import assemble, component
 @component()
 class Service:
     def __init__(self) -> None:
-        self._greeting: str = "Hello"
+        self._greeting: str = 'Hello'
 
     def greet(self, name: str) -> str:
-        return f"{self._greeting}, {name}!"
+        return f'{self._greeting}, {name}!'
 
 class Client:
     def __init__(self, service: Service) -> None:
         self._service = service
 
     def run(self) -> None:
-        print(self._service.greet("World"))
+        print(self._service.greet('World'))
 
 
 assemble(Client).run()
