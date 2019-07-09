@@ -279,7 +279,7 @@ In case something is missing, an appropriate exception will be raised.
 
 In addition to this minimal example, with enterprython we can also:
 
-* work with abstract base classes, thus only [depend on abstractions](https://en.wikipedia.org/wiki/Dependency_inversion_principle).
+* work with abstract base classes, thus only depend on abstractions, which enables the use of different implementation for different environments, e.g., `test` vs. `prod`.
 * decide if services should be singletons or not.
 * provide custom service factories.
 * do some additional other stuff, see [enterprython's features list](https://github.com/Dobiasd/enterprython/#features).

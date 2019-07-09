@@ -16,7 +16,7 @@ Table of contents
 
 * [Introduction](#introduction)
 * [Features](#features)
-  * [Abstract base classes](#abstract-base-classes)
+  * [Abstract base classes and profiles](#abstract-base-classes-and-profiles)
   * [Factories](#factories)
   * [Non-singleton services](#non-singleton-services)
   * [Service lists](#service-lists)
@@ -63,7 +63,7 @@ Hello, World!
 Features
 --------
 
-### Abstract base classes
+### Abstract base classes and profiles
 
 A client may depend on an abstract base class. Enterprython will inject the matching implementation.
 
@@ -86,6 +86,23 @@ assemble(Client)
 ```
 
 One singleton instance of `ServiceImpl` is created and injected into `Client`.
+
+This feature enables the use of different profiles.
+For example, you might want to use different classes implementing an interface
+for your production environment compared when running integration tests.
+This looks as follows:
+
+```python
+@component(profiles=['prod'])
+class ServiceImpl(ServiceInterface):
+    ...
+    
+@component(profiles=['test'])
+class ServiceMock(ServiceInterface):
+    ...
+
+assemble(Client, profile='test')
+```
 
 ### Factories
 
