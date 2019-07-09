@@ -171,7 +171,9 @@ class DomainLogic:
 an [interface](https://docs.python.org/3/library/abc.html)
 instead of a concrete `Connection` implementation.)
 
-Now we can instantiate `DomainLogic` with whatever data source is suitable for any given situation:
+Since we now cleanly [separated the concerns](https://en.wikipedia.org/wiki/Separation_of_concerns)
+of *creating* and *using* the `Connection`,
+we can instantiate `DomainLogic` with whatever data source is suitable for any given situation:
 
 ```python
 from database_connection import Connection
