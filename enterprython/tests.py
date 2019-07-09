@@ -382,8 +382,16 @@ class AbstractTest(unittest.TestCase):
         self.assertEqual("B", client._services[1]._value)  # pylint: disable=protected-access
 
 
+class ServiceInterfaceProfiles(ABC):  # pylint: disable=too-few-public-methods
+    """Defines interface of a service that can greet."""
+
+    @abstractmethod
+    def greet(self, name: str) -> str:
+        """Shall return greeting message."""
+
+
 @component(profiles=['prod'])  # pylint: disable=too-few-public-methods
-class ServiceProd(ServiceInterface):
+class ServiceProd(ServiceInterfaceProfiles):
     """Example service"""
 
     def greet(self, name: str) -> str:
@@ -392,7 +400,7 @@ class ServiceProd(ServiceInterface):
 
 
 @component(profiles=['test', 'dev'])  # pylint: disable=too-few-public-methods
-class ServiceTest(ServiceInterface):
+class ServiceTest(ServiceInterfaceProfiles):
     """Example service"""
 
     def greet(self, name: str) -> str:
@@ -400,30 +408,37 @@ class ServiceTest(ServiceInterface):
         return f'testdev: Hello, {name}!'
 
 
+class ClientDependingOnInterfaceProfile:  # pylint: disable=too-few-public-methods
+    """Depends on Service"""
+
+    def __init__(self, service: ServiceInterfaceProfiles) -> None:
+        """Use constructor injection."""
+        self._service = service
+
+    def greet_world(self) -> str:
+        """Uses Service to greet the world."""
+        return self._service.greet("World")
+
+
 class ProfileTest(unittest.TestCase):
     """Check profiles."""
-
-    def test_no_profile_ok(self) -> None:
-        """Object shall be injected."""
-        self.assertEqual("Hello, World!",
-                         assemble(ClientDependingOnInterface).greet_world())
 
     def test_selected_profile_1(self) -> None:
         """Object is available."""
         self.assertEqual("prod: Hello, World!",
-                         assemble(ClientDependingOnInterface, 'prod').greet_world())
+                         assemble(ClientDependingOnInterfaceProfile, 'prod').greet_world())
 
     def test_selected_profile_2(self) -> None:
         """Object is available."""
         self.assertEqual("testdev: Hello, World!",
-                         assemble(ClientDependingOnInterface, 'test').greet_world())
+                         assemble(ClientDependingOnInterfaceProfile, 'test').greet_world())
 
     def test_selected_profile_3(self) -> None:
         """Object is available."""
         self.assertEqual("testdev: Hello, World!",
-                         assemble(ClientDependingOnInterface, 'dev').greet_world())
+                         assemble(ClientDependingOnInterfaceProfile, 'dev').greet_world())
 
     def test_no_profile_fail(self) -> None:
         """Object is not available."""
         with self.assertRaises(TypeError):
-            assemble(ClientDependingOnInterface, "unknown_profile")
+            assemble(ClientDependingOnInterfaceProfile, "unknown_profile")

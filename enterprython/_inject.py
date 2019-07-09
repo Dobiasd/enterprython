@@ -38,9 +38,7 @@ class _Component(Generic[TypeT]):  # pylint: disable=unsubscriptable-object
         """Check if component can be used for injection of the_type."""
         if self._profiles and not profile:
             return False
-        if not self._profiles and profile:
-            return False
-        if profile and profile not in self._profiles:
+        if profile and self._profiles and profile not in self._profiles:
             return False
         return the_type in self._target_types
 
@@ -82,9 +80,7 @@ class _Factory(Generic[TypeT]):  # pylint: disable=unsubscriptable-object
         """Check if factory can be used for injection of the_type."""
         if self._profiles and not profile:
             return False
-        if not self._profiles and profile:
-            return False
-        if profile and profile not in self._profiles:
+        if profile and self._profiles and profile not in self._profiles:
             return False
         return the_type in self._target_types
 
@@ -199,7 +195,7 @@ def assemble(the_type: Callable[..., TypeT],
             param_factory = _get_factory(parameter_type, profile)
             if parameter_component is not None:
                 arguments[parameter_name] = assemble(
-                    parameter_component.get_type())  # parameter_type?
+                    parameter_component.get_type(), profile)  # parameter_type?
             elif param_factory:
                 arguments[parameter_name] = param_factory.get_instance()
     result = the_type(**arguments)
