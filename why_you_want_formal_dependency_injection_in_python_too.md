@@ -141,7 +141,14 @@ when manually mutating (and depending on) some global state from different place
 In this case, it's just not some normal runtime value
 but the class itself is mutated.
 
-So the sane approach is to make the dependency explicit
+Having a globally accessible [service locator](https://en.wikipedia.org/wiki/Service_locator_pattern),
+actively called from within our `DomainLogic` constructor to get the required `Connection` instance,
+would also not solve the problem.
+The dependencies would still depend on mutatable global state,
+and be hidden instead of being visible on our classes' APIs.
+
+So the sane approach is to use [inversion of control](https://en.wikipedia.org/wiki/Inversion_of_control)
+to make the dependency explicit
 by letting the constructor of `DomainLogic` take the data-access object to use
 as a parameter instead of monkeying around with the class itself:
 
