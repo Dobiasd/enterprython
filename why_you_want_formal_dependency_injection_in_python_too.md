@@ -76,8 +76,8 @@ class DomainLogic:
 ```
 
 Now you need to unit test the complex implementation of your business logic.
-For this you'll want to replace `data_access` with some mock.
-In Python there are multiple options to do so.
+For this, you'll want to replace `data_access` with some mock.
+In Python, there are multiple options to do so.
 A simple and common one,
 using [monkey patching](https://stackoverflow.com/questions/5626193/what-is-monkey-patching),
 is to replace the `DomainLogic.init_data_access` with something
@@ -125,21 +125,21 @@ to use and test it properly.
 Second, you can no longer safely use a unit-testing framework
 running multiple tests concurrently, because test cases might perform
 different monkey patchings on the same classes,
-and thus step on each others toes.
+and thus step on each other's toes.
 
-Third, in case of multiple dependencies,
+Third, in the case of multiple dependencies,
 not all tests might need to patch the same number of things in the class.
 Then, even with non-concurrent test execution,
 this can end up in not correctly resetting the "state" of the class in some place
 after one test, and subsequently invalidating other tests.
 The overall success of the test suite
-will depend on the order of execution of the test cases,
+will depend on the order of execution of the test cases
 if not all developers take special care. Yikes!
 
-In general one runs into the same problems as usual
+In general, one runs into the same problems as usual
 when manually mutating (and depending on) some global state from different places.
-In this case it's just not some normal runtime value
-but the class itself which is mutated.
+In this case, it's just not some normal runtime value
+but the class itself is mutated.
 
 So the sane approach is to make the dependency explicit
 by letting the constructor of `DomainLogic` take the data-access object to use
@@ -188,7 +188,7 @@ Now it's time to make using this technique as convenient as possible.
 
 With larger, real-world dependency trees, the shown manual injection
 can become quite cumbersome,
-like the following example, creating a hypothetical `Controller`, shows:
+as the following example, creating a hypothetical `Controller`, shows:
 
 ```python
 some_repository = SomeRepository()
@@ -209,7 +209,7 @@ i.e., we only want to instantiate
 them once in our whole application.
 Manually taking care of this in the code adds an additional burden.
 
-One possible solution is to externalize this tree definitions,
+One possible solution is to externalize these tree definitions,
 e.g., into a (maybe XML-like) configuration file,
 and have some framework taking care of wiring the instances at runtime.
 
@@ -266,7 +266,7 @@ If the service (`database_connection.Connection` in that case) would itself
 depend on other things, they also would be auto-created (singleton style)
 in the libraries DI container, and then injected,
 rinsing and repeating until the full dependency tree is resolved.
-In case something is missing, an appropriate exception will be raised
+In case something is missing, an appropriate exception will be raised.
 
 In addition to this minimal example, with enterprython we can also:
 
