@@ -7,8 +7,8 @@ import unittest
 from abc import ABC, abstractmethod
 from typing import NamedTuple, List
 
-from enterprython import assemble, component, factory, value
-from enterprython import set_values_from_config, add_values, set_values
+from ._inject import assemble, component, factory, value
+from ._inject import set_values_from_config, add_values, set_values
 
 __author__ = "Tobias Hermann"
 __copyright__ = "Copyright 2018, Tobias Hermann"
