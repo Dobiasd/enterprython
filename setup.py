@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="enterprython",
-    version="0.5.2",
+    version="0.5.3",
     author="Tobias Hermann",
     author_email="editgym@gmail.com",
     description="Type-based dependency injection",

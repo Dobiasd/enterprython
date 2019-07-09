@@ -24,15 +24,24 @@ class _Component(Generic[TypeT]):  # pylint: disable=unsubscriptable-object
 
     def __init__(self, the_type: Callable[..., TypeT],
                  target_types: Tuple[Type[Any], ...],
-                 singleton: bool) -> None:
+                 singleton: bool,
+                 profiles: List[str]) -> None:
         """Figure out and store base classes."""
         self._type = the_type
         self._is_singleton = singleton
+        self._profiles = profiles
         self._target_types = target_types
         self._instance: Optional[TypeT] = None
 
-    def matches(self, the_type: Callable[..., TypeT]) -> bool:
+    def matches(self, the_type: Callable[..., TypeT],
+                profile: Optional[str]) -> bool:
         """Check if component can be used for injection of the_type."""
+        if self._profiles and not profile:
+            return False
+        if not self._profiles and profile:
+            return False
+        if profile and profile not in self._profiles:
+            return False
         return the_type in self._target_types
 
     def set_instance_if_singleton(self, instance: TypeT) -> None:
@@ -55,19 +64,28 @@ class _Factory(Generic[TypeT]):  # pylint: disable=unsubscriptable-object
     """Internal class to store factories for DI."""
 
     def __init__(self, func: Callable[..., TypeT],
-                 singleton: bool) -> None:
+                 singleton: bool,
+                 profiles: List[str]) -> None:
         """Figure out and store base classes."""
         return_type = inspect.signature(func).return_annotation
         if return_type is inspect.Signature.empty:
             raise TypeError(f'Unknown return type of {func.__name__}')
         self._func = func
         self._is_singleton = singleton
+        self._profiles = profiles
         self._return_type: Type[Any] = return_type
         self._target_types: Tuple[Type[Any], ...] = inspect.getmro(return_type)
         self._instance: Optional[TypeT] = None
 
-    def matches(self, the_type: Callable[..., TypeT]) -> bool:
+    def matches(self, the_type: Callable[..., TypeT],
+                profile: Optional[str]) -> bool:
         """Check if factory can be used for injection of the_type."""
+        if self._profiles and not profile:
+            return False
+        if not self._profiles and profile:
+            return False
+        if profile and profile not in self._profiles:
+            return False
         return the_type in self._target_types
 
     def get_instance(self) -> Optional[TypeT]:
@@ -120,12 +138,13 @@ def set_values_from_config(config: configparser.ConfigParser) -> None:
     set_values({s: dict(config.items(s)) for s in config.sections()})
 
 
-def _create(the_type: Callable[..., TypeT]) -> Optional[TypeT]:
-    stored_factory = _get_factory(the_type)
+def _create(the_type: Callable[..., TypeT],
+            profile: Optional[str] = None) -> Optional[TypeT]:
+    stored_factory = _get_factory(the_type, profile)
     if stored_factory:
         return stored_factory.get_instance()
 
-    stored_component = _get_component(the_type)
+    stored_component = _get_component(the_type, profile)
     if stored_component:
         instance = stored_component.get_instance()
         if instance is not None:
@@ -133,18 +152,7 @@ def _create(the_type: Callable[..., TypeT]) -> Optional[TypeT]:
     return None
 
 
-def assemble(the_type: Callable[..., TypeT], **kwargs: Any) -> TypeT:
-    """Create an instance of a certain type,
-    using constructor injection if needed."""
-
-    global ENTERPRYTHON_COMPONENTS  # pylint: disable=global-statement
-
-    ready_result = _create(the_type)
-    if ready_result is not None:
-        return ready_result
-
-    signature = inspect.signature(the_type)
-
+def _get_parameters(signature: inspect.Signature) -> Dict[str, Type[Any]]:
     parameters: Dict[str, Type[Any]] = {}
     for param in signature.parameters.values():
         if param.name == 'self':
@@ -155,6 +163,24 @@ def assemble(the_type: Callable[..., TypeT], **kwargs: Any) -> TypeT:
         if param.annotation is inspect.Signature.empty:
             raise TypeError('Parameter needs needs a type annotation.')
         parameters[param.name] = param.annotation
+    return parameters
+
+
+def assemble(the_type: Callable[..., TypeT],
+             profile: Optional[str] = None,
+             **kwargs: Any) -> TypeT:
+    """Create an instance of a certain type,
+    using constructor injection if needed."""
+
+    global ENTERPRYTHON_COMPONENTS  # pylint: disable=global-statement
+
+    ready_result = _create(the_type, profile)
+    if ready_result is not None:
+        return ready_result
+
+    signature = inspect.signature(the_type)
+
+    parameters = _get_parameters(signature)
 
     arguments: Dict[str, Any] = kwargs
     uses_manual_args = False
@@ -163,20 +189,21 @@ def assemble(the_type: Callable[..., TypeT], **kwargs: Any) -> TypeT:
             uses_manual_args = True
             continue
         if _is_list_type(parameter_type):
-            parameter_components = _get_components(_get_list_type_elem_type(parameter_type))
+            parameter_components = _get_components(
+                _get_list_type_elem_type(parameter_type), profile)
             arguments[parameter_name] = list(map(assemble,
                                                  map(lambda comp: comp.get_type(),
                                                      parameter_components)))
         else:
-            parameter_component = _get_component(parameter_type)
-            param_factory = _get_factory(parameter_type)
+            parameter_component = _get_component(parameter_type, profile)
+            param_factory = _get_factory(parameter_type, profile)
             if parameter_component is not None:
                 arguments[parameter_name] = assemble(
                     parameter_component.get_type())  # parameter_type?
             elif param_factory:
                 arguments[parameter_name] = param_factory.get_instance()
     result = the_type(**arguments)
-    stored_component = _get_component(the_type)
+    stored_component = _get_component(the_type, profile)
     if stored_component and not uses_manual_args:
         stored_component.set_instance_if_singleton(result)
     return result
@@ -188,8 +215,9 @@ def value(the_type: Callable[..., TypeT], config_section: str, value_name: str) 
     return the_type(ENTERPRYTHON_VALUES[config_section][value_name])
 
 
-def component(singleton: bool = True) -> Callable[[Callable[..., TypeT]],
-                                                  Callable[..., TypeT]]:
+def component(singleton: bool = True,  # pylint: disable=dangerous-default-value
+              profiles: List[str] = []) -> Callable[[Callable[..., TypeT]],  # pylint: disable=dangerous-default-value
+                                                    Callable[..., TypeT]]:
     """Annotation to register a class to be available for DI."""
 
     def register(the_class: Callable[..., TypeT]) -> Callable[..., TypeT]:
@@ -200,14 +228,15 @@ def component(singleton: bool = True) -> Callable[[Callable[..., TypeT]],
             raise TypeError(f'Can not register abstract class as component.')
         global ENTERPRYTHON_COMPONENTS  # pylint: disable=global-statement
         target_types = inspect.getmro(the_class)  # type: ignore
-        _add_component(the_class, target_types, singleton)
+        _add_component(the_class, target_types, singleton, profiles)
         return the_class
 
     return register
 
 
-def factory(singleton: bool = True) -> Callable[[Callable[..., TypeT]],
-                                                Callable[..., TypeT]]:
+def factory(singleton: bool = True,  # pylint: disable=dangerous-default-value
+            profiles: List[str] = []) -> Callable[[Callable[..., TypeT]],
+                                                  Callable[..., TypeT]]:
     """Annotation to register a factory to be available for DI."""
 
     def register(func: Callable[..., TypeT]) -> Callable[..., TypeT]:
@@ -215,22 +244,24 @@ def factory(singleton: bool = True) -> Callable[[Callable[..., TypeT]],
         if not inspect.isfunction(func):
             raise TypeError('Only functions can be registered as factories.')
         global ENTERPRYTHON_COMPONENTS  # pylint: disable=global-statement
-        _add_factory(func, singleton)
+        _add_factory(func, singleton, profiles)
         return func
 
     return register
 
 
-def _get_components(the_type: Callable[..., TypeT]) -> List[_Component[TypeT]]:
+def _get_components(the_type: Callable[..., TypeT],
+                    profile: Optional[str]) -> List[_Component[TypeT]]:
     """Return stored component for type if available."""
     return [stored_component
             for stored_component in ENTERPRYTHON_COMPONENTS
-            if stored_component.matches(the_type)]
+            if stored_component.matches(the_type, profile)]
 
 
-def _get_component(the_type: Callable[..., TypeT]) -> Optional[_Component[TypeT]]:
+def _get_component(the_type: Callable[..., TypeT],
+                   profile: Optional[str]) -> Optional[_Component[TypeT]]:
     """Return stored component for type if available."""
-    components = _get_components(the_type)
+    components = _get_components(the_type, profile)
     if len(components) > 1:
         raise TypeError(f'Ambiguous dependency {the_type.__name__}.')
     if not components:
@@ -238,16 +269,18 @@ def _get_component(the_type: Callable[..., TypeT]) -> Optional[_Component[TypeT]
     return components[0]
 
 
-def _get_factories(the_type: Callable[..., TypeT]) -> List[_Factory[TypeT]]:
+def _get_factories(the_type: Callable[..., TypeT],
+                   profile: Optional[str]) -> List[_Factory[TypeT]]:
     """Return stored factories for type if available."""
     return [stored_factory
             for stored_factory in ENTERPRYTHON_FACTORIES
-            if stored_factory.matches(the_type)]
+            if stored_factory.matches(the_type, profile)]
 
 
-def _get_factory(the_type: Callable[..., TypeT]) -> Optional[_Factory[TypeT]]:
+def _get_factory(the_type: Callable[..., TypeT],
+                 profile: Optional[str]) -> Optional[_Factory[TypeT]]:
     """Return stored factory for type if available."""
-    factories = _get_factories(the_type)
+    factories = _get_factories(the_type, profile)
     if len(factories) > 1:
         raise TypeError(f'Multiple factories available for {the_type.__name__}.')
     if not factories:
@@ -257,24 +290,36 @@ def _get_factory(the_type: Callable[..., TypeT]) -> Optional[_Factory[TypeT]]:
 
 def _add_component(the_type: Callable[..., TypeT],
                    target_types: Tuple[Type[Any], ...],
-                   singleton: bool) -> None:
+                   singleton: bool,
+                   profiles: List[str]) -> None:
     """Store new component for DI."""
     global ENTERPRYTHON_COMPONENTS  # pylint: disable=global-statement
-    new_component = _Component(the_type, target_types, singleton)
-    if _get_component(new_component.get_type()) is not None:
+    new_component = _Component(the_type, target_types, singleton, profiles)
+    if _get_component(new_component.get_type(), None) is not None:
         raise TypeError(f'{the_type.__name__} '
                         'already registered as component.')
+
+    for profile in profiles:
+        if _get_component(new_component.get_type(), profile) is not None:
+            raise TypeError(f'{the_type.__name__} '
+                            'already registered as component for profile "{profile}".')
     ENTERPRYTHON_COMPONENTS.append(new_component)
 
 
 def _add_factory(func: Callable[..., TypeT],
-                 singleton: bool) -> None:
+                 singleton: bool,
+                 profiles: List[str]) -> None:
     """Store new factory for DI."""
     global ENTERPRYTHON_FACTORIES  # pylint: disable=global-statement
-    new_factory = _Factory(func, singleton)
-    if _get_factory(new_factory.get_return_type()) is not None:
+    new_factory = _Factory(func, singleton, profiles)
+    if _get_factory(new_factory.get_return_type(), None) is not None:
         raise TypeError(f'{func.__name__} '
                         'already registered as component.')
+
+    for profile in profiles:
+        if _get_factory(new_factory.get_return_type(), profile) is not None:
+            raise TypeError(f'{func.__name__} '
+                            'already registered as component for profile "{profile}".')
     ENTERPRYTHON_FACTORIES.append(new_factory)
 
 
