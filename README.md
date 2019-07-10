@@ -90,7 +90,7 @@ One singleton instance of `ServiceImpl` is created and injected into `Client`.
 This feature enables the use of different profiles.
 For example, you might want to use different classes implementing an interface
 for your production environment compared when running integration tests.
-This looks as follows:
+By providing a `profiles` list, you can limit when the component is available.
 
 ```python
 @component(profiles=['prod'])
