@@ -40,7 +40,7 @@ class _Component(Generic[TypeT]):  # pylint: disable=unsubscriptable-object
             return False
         if profile and self._profiles and profile not in self._profiles:
             return False
-        return the_type in self._target_types
+        return the_type in self._target_types  # type: ignore
 
     def set_instance_if_singleton(self, instance: TypeT) -> None:
         """If this component is a singleton, set its instance."""
@@ -82,7 +82,7 @@ class _Factory(Generic[TypeT]):  # pylint: disable=unsubscriptable-object
             return False
         if profile and self._profiles and profile not in self._profiles:
             return False
-        return the_type in self._target_types
+        return the_type in self._target_types  # type: ignore
 
     def get_instance(self) -> Optional[TypeT]:
         """Access singleton instance if present."""
@@ -207,7 +207,7 @@ def assemble(the_type: Callable[..., TypeT],
 
 def value(the_type: Callable[..., TypeT], config_section: str, value_name: str) -> TypeT:
     """Get a config value from the global enterprython config store."""
-    assert the_type in [bool, float, int, str]
+    assert the_type in [bool, float, int, str]  # type: ignore
     return the_type(ENTERPRYTHON_VALUES[config_section][value_name])
 
 
@@ -221,7 +221,7 @@ def component(singleton: bool = True,  # pylint: disable=dangerous-default-value
         if not inspect.isclass(the_class):
             raise TypeError('Only classes can be registered as components.')
         if inspect.isabstract(the_class):
-            raise TypeError(f'Can not register abstract class as component.')
+            raise TypeError('Can not register abstract class as component.')
         global ENTERPRYTHON_COMPONENTS  # pylint: disable=global-statement
         target_types = inspect.getmro(the_class)  # type: ignore
         _add_component(the_class, target_types, singleton, profiles)

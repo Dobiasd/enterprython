@@ -16,7 +16,9 @@ __email__ = "editgym@gmail.com"
 __license__ = "MIT"
 
 
-class ServiceInterface(ABC):  # pylint: disable=too-few-public-methods
+# pylint: disable=too-few-public-methods
+
+class ServiceInterface(ABC):
     """Defines interface of a service that can greet."""
 
     @abstractmethod
@@ -24,7 +26,7 @@ class ServiceInterface(ABC):  # pylint: disable=too-few-public-methods
         """Shall return greeting message."""
 
 
-@component()  # pylint: disable=too-few-public-methods
+@component()
 class Service(ServiceInterface):
     """Example service"""
 
@@ -33,12 +35,12 @@ class Service(ServiceInterface):
         return f'Hello, {name}!'
 
 
-@component(singleton=False)  # pylint: disable=too-few-public-methods
+@component(singleton=False)
 class ServiceNonSingleton:
     """Example service"""
 
 
-class WithValue:  # pylint: disable=too-few-public-methods
+class WithValue:
     """Example class using a configuration value"""
 
     def __init__(self) -> None:
@@ -50,7 +52,7 @@ class WithValue:  # pylint: disable=too-few-public-methods
         return str(self._value)
 
 
-class Client:  # pylint: disable=too-few-public-methods
+class Client:
     """Depends on Service"""
 
     def __init__(self, service: Service) -> None:
@@ -62,7 +64,7 @@ class Client:  # pylint: disable=too-few-public-methods
         return self._service.greet("World")
 
 
-class ServiceFromFactory(NamedTuple):  # pylint: disable=too-few-public-methods
+class ServiceFromFactory(NamedTuple):
     """Depends on nothing."""
     value: int = 42
 
@@ -73,12 +75,12 @@ def service_factory() -> ServiceFromFactory:
     return ServiceFromFactory(40)
 
 
-class ClientServiceFromFactory(NamedTuple):  # pylint: disable=too-few-public-methods
+class ClientServiceFromFactory(NamedTuple):
     """Depends on ServiceFromFactory."""
     service: ServiceFromFactory
 
 
-class ServiceFromFactoryNonSingleton(NamedTuple):  # pylint: disable=too-few-public-methods
+class ServiceFromFactoryNonSingleton(NamedTuple):
     """Depends on nothing."""
     value: int = 42
 
@@ -89,7 +91,7 @@ def service_factory_non_singleton() -> ServiceFromFactoryNonSingleton:
     return ServiceFromFactoryNonSingleton()
 
 
-class ClientServiceFromFactoryNonSingleton(NamedTuple):  # pylint: disable=too-few-public-methods
+class ClientServiceFromFactoryNonSingleton(NamedTuple):
     """Depends on ServiceFromFactoryNonSingleton."""
     service: ServiceFromFactoryNonSingleton
 
@@ -99,76 +101,76 @@ def client_func(service: Service) -> str:
     return service.greet("World")
 
 
-class ClientNonSingleton:  # pylint: disable=too-few-public-methods
+class ClientNonSingleton:
     """Depends on ServiceNonSingleton."""
 
     def __init__(self, service: ServiceNonSingleton) -> None:
         self._service = service
 
 
-class ClientWithoutTypeAnnotation:  # pylint: disable=too-few-public-methods
+class ClientWithoutTypeAnnotation:
     """Depends on some unknown thing."""
 
     def __init__(self, service) -> None:  # type: ignore
         self._service = service
 
 
-@component()  # pylint: disable=too-few-public-methods
+@component()
 class Layer3(NamedTuple):
     """Depends on nothing."""
     value: int = 42
 
 
-@component()  # pylint: disable=too-few-public-methods
+@component()
 class Layer2(NamedTuple):
     """Depends on Layer3"""
     service: Layer3
 
 
-class Layer1(NamedTuple):  # pylint: disable=too-few-public-methods
+class Layer1(NamedTuple):
     """Depends on Layer2"""
     service: Layer2
 
 
-@component()  # pylint: disable=too-few-public-methods
+@component()
 class ServiceA(NamedTuple):
     """Depends on nothing."""
     value: str = "A"
 
 
-@component()  # pylint: disable=too-few-public-methods
+@component()
 class ServiceB(NamedTuple):
     """Depends on nothing."""
     value: str = "B"
 
 
-class ServiceCNoComponent(NamedTuple):  # pylint: disable=too-few-public-methods
+class ServiceCNoComponent(NamedTuple):
     """Depends on nothing."""
     value: str = "C"
 
 
-@component()  # pylint: disable=too-few-public-methods
+@component()
 class ClientAB(NamedTuple):
     """Depends on ServiceA and ServiceB."""
     service_a: ServiceA
     service_b: ServiceB
 
 
-@component()  # pylint: disable=too-few-public-methods
+@component()
 class ClientABDefaultB(NamedTuple):
     """Depends on ServiceA and ServiceB."""
     service_a: ServiceA
     service_b: ServiceB = ServiceB('BDefault')
 
 
-@component()  # pylint: disable=too-few-public-methods
+@component()
 class ClientACDefaultC(NamedTuple):
     """Depends on ServiceA and ServiceB."""
     service_a: ServiceA
     service_c: ServiceCNoComponent = ServiceCNoComponent('CDefault')
 
 
-class ClientKWArg:  # pylint: disable=too-few-public-methods
+class ClientKWArg:
     """Depends on Service"""
 
     def __init__(self, service: Service, name: str) -> None:
@@ -181,7 +183,7 @@ class ClientKWArg:  # pylint: disable=too-few-public-methods
         return self._service.greet(self._name)
 
 
-class ClientDependingOnInterface:  # pylint: disable=too-few-public-methods
+class ClientDependingOnInterface:
     """Depends on Service"""
 
     def __init__(self, service: ServiceInterface) -> None:
@@ -193,12 +195,12 @@ class ClientDependingOnInterface:  # pylint: disable=too-few-public-methods
         return self._service.greet("World")
 
 
-class MultiServiceInterface(ABC):  # pylint: disable=too-few-public-methods
+class MultiServiceInterface(ABC):
     """Define interface for multiple services."""
     _value: str = "Interface"
 
 
-@component()  # pylint: disable=too-few-public-methods
+@component()
 class ServiceMultiA(MultiServiceInterface):
     """Example service A"""
 
@@ -207,7 +209,7 @@ class ServiceMultiA(MultiServiceInterface):
         self._value = "A"
 
 
-@component()  # pylint: disable=too-few-public-methods
+@component()
 class ServiceMultiB(MultiServiceInterface):
     """Example service B"""
 
@@ -216,7 +218,7 @@ class ServiceMultiB(MultiServiceInterface):
         self._value = "B"
 
 
-class ClientDependingOnOneOfTwoServices:  # pylint: disable=too-few-public-methods
+class ClientDependingOnOneOfTwoServices:
     """Depends on ServiceMultiA or ServiceMultiB"""
 
     def __init__(self, service: MultiServiceInterface) -> None:
@@ -224,7 +226,7 @@ class ClientDependingOnOneOfTwoServices:  # pylint: disable=too-few-public-metho
         self._service = service
 
 
-class ClientDependingOnAllMultiServiceInterfaceImpls:  # pylint: disable=too-few-public-methods
+class ClientDependingOnAllMultiServiceInterfaceImpls:
     """Depends on ServiceMultiA and ServiceMultiB"""
 
     def __init__(self, services: List[MultiServiceInterface]) -> None:
@@ -323,9 +325,9 @@ class ErrorTest(unittest.TestCase):
     def test_double_registration(self) -> None:
         """A class may only be registered once."""
         with self.assertRaises(TypeError):
-            @component()  # pylint: disable=too-few-public-methods,unused-variable
+            @component()  # pylint: disable=unused-variable
             @component()
-            class Duplicate:
+            class Duplicate:  # pylint: disable=unused-variable
                 """Class to be registered multiple times."""
 
     def test_ambiguous(self) -> None:
@@ -382,7 +384,7 @@ class AbstractTest(unittest.TestCase):
         self.assertEqual("B", client._services[1]._value)  # pylint: disable=protected-access
 
 
-class ServiceInterfaceProfiles(ABC):  # pylint: disable=too-few-public-methods
+class ServiceInterfaceProfiles(ABC):
     """Defines interface of a service that can greet."""
 
     @abstractmethod
@@ -390,7 +392,7 @@ class ServiceInterfaceProfiles(ABC):  # pylint: disable=too-few-public-methods
         """Shall return greeting message."""
 
 
-@component(profiles=['prod'])  # pylint: disable=too-few-public-methods
+@component(profiles=['prod'])
 class ServiceProd(ServiceInterfaceProfiles):
     """Example service"""
 
@@ -399,8 +401,8 @@ class ServiceProd(ServiceInterfaceProfiles):
         return f'prod: Hello, {name}!'
 
 
-@component(profiles=['test', 'dev'])  # pylint: disable=too-few-public-methods
-class ServiceTest(ServiceInterfaceProfiles):
+@component(profiles=['test', 'dev'])
+class ServiceTest(ServiceInterfaceProfiles):  # pylint: disable=too-few-public-methods
     """Example service"""
 
     def greet(self, name: str) -> str:
@@ -408,7 +410,7 @@ class ServiceTest(ServiceInterfaceProfiles):
         return f'testdev: Hello, {name}!'
 
 
-class ClientDependingOnInterfaceProfile:  # pylint: disable=too-few-public-methods
+class ClientDependingOnInterfaceProfile:
     """Depends on Service"""
 
     def __init__(self, service: ServiceInterfaceProfiles) -> None:
