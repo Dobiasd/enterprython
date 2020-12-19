@@ -1,5 +1,6 @@
 ![logo](https://github.com/Dobiasd/enterprython/raw/master/logo/enterprython.png)
 
+[![CI](https://github.com/Dobiasd/enterprython/workflows/ci/badge.svg)](https://github.com/Dobiasd/enterprython/actions)
 [![(License MIT 1.0)](https://img.shields.io/badge/license-MIT%201.0-blue.svg)][license]
 
 [license]: LICENSE
