@@ -12,7 +12,8 @@ setuptools.setup(
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="http://github.com/Dobiasd/enterprython",
-    packages=setuptools.find_packages(),
+    package_data={"enterprython": ["py.typed"]},
+    packages=["enterprython"],
     classifiers=(
         "Programming Language :: Python :: 3.6",
         "Programming Language :: Python :: 3.7",
