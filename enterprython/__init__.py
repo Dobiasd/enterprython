@@ -1,5 +1,11 @@
-from ._inject import add_value, add_values, set_values, set_values_from_config
-from ._inject import assemble, component, factory, value
+from ._inject import add_value
+from ._inject import add_values
+from ._inject import assemble
+from ._inject import component
+from ._inject import factory
+from ._inject import set_values
+from ._inject import set_values_from_config
+from ._inject import value
 
 name = "enterprython"
 
