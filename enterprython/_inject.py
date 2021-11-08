@@ -104,7 +104,6 @@ ENTERPRYTHON_FACTORIES: List[_Factory[Any]] = []
 
 def add_values(new_values: Dict[str, Dict[str, ValueType]]) -> None:
     """Extent current value store (section, name, value)."""
-    global ENTERPRYTHON_VALUES  # pylint: disable=global-statement
     for section, names_with_values in new_values.items():
         if section in ENTERPRYTHON_VALUES:
             for name, new_value in names_with_values.items():
@@ -168,8 +167,6 @@ def assemble(the_type: Callable[..., TypeT],
     """Create an instance of a certain type,
     using constructor injection if needed."""
 
-    global ENTERPRYTHON_COMPONENTS  # pylint: disable=global-statement
-
     ready_result = _create(the_type, profile)
     if ready_result is not None:
         return ready_result
@@ -222,7 +219,6 @@ def component(singleton: bool = True,  # pylint: disable=dangerous-default-value
             raise TypeError('Only classes can be registered as components.')
         if inspect.isabstract(the_class):
             raise TypeError('Can not register abstract class as component.')
-        global ENTERPRYTHON_COMPONENTS  # pylint: disable=global-statement
         target_types = inspect.getmro(the_class)  # type: ignore
         _add_component(the_class, target_types, singleton, profiles)
         return the_class
@@ -239,7 +235,6 @@ def factory(singleton: bool = True,  # pylint: disable=dangerous-default-value
         """Register component and forward type."""
         if not inspect.isfunction(func):
             raise TypeError('Only functions can be registered as factories.')
-        global ENTERPRYTHON_COMPONENTS  # pylint: disable=global-statement
         _add_factory(func, singleton, profiles)
         return func
 
@@ -289,7 +284,6 @@ def _add_component(the_type: Callable[..., TypeT],
                    singleton: bool,
                    profiles: List[str]) -> None:
     """Store new component for DI."""
-    global ENTERPRYTHON_COMPONENTS  # pylint: disable=global-statement
     new_component = _Component(the_type, target_types, singleton, profiles)
     if _get_component(new_component.get_type(), None) is not None:
         raise TypeError(f'{the_type.__name__} '
@@ -306,7 +300,6 @@ def _add_factory(func: Callable[..., TypeT],
                  singleton: bool,
                  profiles: List[str]) -> None:
     """Store new factory for DI."""
-    global ENTERPRYTHON_FACTORIES  # pylint: disable=global-statement
     new_factory = _Factory(func, singleton, profiles)
     if _get_factory(new_factory.get_return_type(), None) is not None:
         raise TypeError(f'{func.__name__} '
