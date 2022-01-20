@@ -226,10 +226,15 @@ The value store supports merging multiple sources using the following precedence
 
 Command line arguments overwrite environment variables and environment variables overwrite configuration files.
 
+To load the value store use the helper function `load_config` as below.
+
 ```python
-load_config("myapp", ["config.toml"])
+load_config(app_name="myapp", paths=["config.toml"])
 ```
 
+`app_name` is the application name and is required to identify environment variables.
+
+`paths` is a list of relative file paths, files will be loaded and merged in the same order.
 
 ### Value Injection
 
