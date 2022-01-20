@@ -265,7 +265,7 @@ attrib1, attrib2 and attrib3 will be injected using the configuration entries li
 
 By default, enterprython will use the attribute path convention (notice the **service_** preffix in each of the configuration entries )
 
-If multiple services need to read the same configuration entry, the **setting** decorator let you provide your custom key:
+If multiple services need to read the same configuration entry, the `setting` decorator let you provide your custom key:
 
 ```python
 @component()
@@ -294,7 +294,11 @@ MYATTRIB3 = false
 ```
 
 The value injection provides type-checking and enforces injection of any attribute without defaults.
-To skip injecting an attribute, you can use the attrs/dataclass field decorator to opt-out:
+
+To skip injecting an attribute, you can:
+1. Use the attribute default value.
+2. Use the attrs/dataclass `field` decorator providing `init=False` and `default=...`  to opt-out from injection. 
+Using this, the attribute will not get injected (even if a matching entry exists in the value store)
 
 ```python
 @component()
