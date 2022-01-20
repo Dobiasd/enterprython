@@ -21,6 +21,8 @@ Table of contents
   * [Service lists](#service-lists)
   * [Mixing managed and manual injection](#mixing-managed-and-manual-injection)
   * [Free functions as clients](#free-functions-as-clients)
+  * [Value store](#value-store)
+  * [Value injection](#value-injection)
 * [Requirements and Installation](#requirements-and-installation)
 
 Introduction
