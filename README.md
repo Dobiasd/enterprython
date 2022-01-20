@@ -235,7 +235,16 @@ Service's value-type attributes are automatically injected from the value store 
 
 Python [dataclass](https://docs.python.org/3/library/dataclasses.html) and [attrs](https://www.attrs.org/en/stable/) are supported.
 
+`@attrs.define` or `@dc.dataclass` decorators are provided after the `@component` decorator 
+
+Notice that `attrs` and `dc` module alias is being used to highlight what library is used.
+
+Feel free to use the more compact `@define` and `@dataclass` versions in your production code.
+
+
 ```python
+import attrs
+
 @component()
 @attrs.define
 class Service:
