@@ -6,8 +6,10 @@ import configparser
 import unittest
 from abc import ABC, abstractmethod
 from typing import NamedTuple, List
+import dataclasses as dc
+import attrs
 
-from ._inject import assemble, component, factory, value
+from ._inject import assemble, component, factory, value, load_config, setting
 from ._inject import set_values_from_config, add_values, set_values
 
 __author__ = "Tobias Hermann"
@@ -39,6 +41,66 @@ class Service(ServiceInterface):
 class ServiceNonSingleton:
     """Example service"""
 
+@component()
+@attrs.define
+class ServiceWithValues:
+    """Service with values"""
+    attrib1: int
+    attrib2: str
+    attrib3: bool
+
+    def greet(self, name:str) -> str:
+        return f'Hello, {name}!{self.attrib1},{self.attrib2},{self.attrib3}'
+        
+
+@component()
+@attrs.define
+class ServiceWithValuesAndSettingDecorator:
+    """Class with values demoing setting decorator"""
+    attrib3: bool
+    #inject below attributes from given config keys:
+    attrib1: int = setting("COMMON_ATTRIB1")
+    attrib2: str = setting("COMMON_ATTRIB2")
+
+    def greet(self, name:str) -> str:
+        return f'Hello, {name}!{self.attrib1},{self.attrib2},{self.attrib3}'
+
+@component()
+@attrs.define
+class ServiceWithValuesPreventAttributeInjection:
+    """Class with values showing how to prevent injection"""
+    attrib1: int
+    attrib2: str
+    # to prevent the attribute value injection using attrs or dataclass field decorator:
+    # 1. use init=False to exclude it from the generated __init__ method
+    # 2. set the default value
+    attrib3: bool = attrs.field(init=False, default=True)
+
+    def greet(self, name:str) -> str:
+        return f'Hello, {name}!{self.attrib1},{self.attrib2},{self.attrib3}'
+
+@component()
+@dc.dataclass
+class ServiceWithValuesPreventAttributeInjectionDc:
+    """Class with values, showing how to prevent injection"""
+    attrib1: int
+    attrib2: str
+    attrib3: bool = dc.field(init=False, default=True)
+
+    def greet(self, name:str) -> str:
+        return f'Hello, {name}!{self.attrib1},{self.attrib2},{self.attrib3}'
+
+@component()
+@dc.dataclass
+class ServiceWithValuesAndSettingDecoratorDc:
+    """Class with values demoing setting decorator"""
+    attrib3: bool
+    #inject below attributes from given config keys:
+    attrib1: int = setting("COMMON_ATTRIB1")
+    attrib2: str = setting("COMMON_ATTRIB2")
+
+    def greet(self, name:str) -> str:
+        return f'Hello, {name}!{self.attrib1},{self.attrib2},{self.attrib3}'
 
 class WithValue:
     """Example class using a configuration value"""
@@ -63,6 +125,42 @@ class Client:
         """Uses Service to greet the world."""
         return self._service.greet("World")
 
+@attrs.define
+class ClientWithValueInjection:
+    service: ServiceWithValues
+
+    def greet_world(self) ->str:
+        return self.service.greet("World")
+
+@attrs.define
+class ClientWithValueInjectionSettingDecorator:
+    service: ServiceWithValuesAndSettingDecorator
+
+    def greet_world(self) ->str:
+        return self.service.greet("World")
+
+@attrs.define
+class ClientWithValuesPreventInjection:
+    service: ServiceWithValuesPreventAttributeInjection
+
+    def greet_world(self) -> str:
+        return self.service.greet("World")
+
+
+@dc.dataclass
+class ClientWithValuesPreventInjectionDc:
+    service: ServiceWithValuesPreventAttributeInjectionDc
+
+    def greet_world(self) -> str:
+        return self.service.greet("World")
+
+
+@dc.dataclass
+class ClientWithValueInjectionSettingDecoratorDc:
+    service: ServiceWithValuesAndSettingDecoratorDc
+
+    def greet_world(self) ->str:
+        return self.service.greet("World")
 
 class ServiceFromFactory(NamedTuple):
     """Depends on nothing."""
@@ -125,7 +223,6 @@ class Layer3(NamedTuple):
 class Layer2(NamedTuple):
     """Depends on Layer3"""
     service: Layer3
-
 
 class Layer1(NamedTuple):
     """Depends on Layer2"""
@@ -444,3 +541,35 @@ class ProfileTest(unittest.TestCase):
         """Object is not available."""
         with self.assertRaises(TypeError):
             assemble(ClientDependingOnInterfaceProfile, "unknown_profile")
+
+class ValueInjectionTests(unittest.TestCase):
+    
+    APP_NAME = "TEST"
+
+    def _load_config(self):
+        load_config(self.APP_NAME, ["config.toml"])
+
+    def test_inject_basic(self):
+        self._load_config()
+        msg = assemble(ClientWithValueInjection).greet_world()
+        self.assertEqual("Hello, World!10,test WOW,False", msg)
+    
+    def test_inject_setting_decorator(self):
+        self._load_config()
+        msg = assemble(ClientWithValueInjectionSettingDecorator).greet_world()
+        self.assertEqual("Hello, World!55,test common,False", msg)
+    
+    def test_inject_setting_decorator_dataclass(self):
+        self._load_config()
+        msg = assemble(ClientWithValueInjectionSettingDecoratorDc).greet_world()
+        self.assertEqual("Hello, World!55,test common,False", msg)
+    
+    def test_inject_prevent_attribute_injection(self):
+        self._load_config()
+        msg = assemble(ClientWithValuesPreventInjection).greet_world()
+        self.assertEqual("Hello, World!10,test WOW,True", msg)
+    
+    def test_inject_prevent_attribute_injection_dataclass(self):
+        self._load_config()
+        msg = assemble(ClientWithValuesPreventInjectionDc).greet_world()
+        self.assertEqual("Hello, World!10,test WOW,True", msg)
