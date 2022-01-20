@@ -216,6 +216,103 @@ assemble(client)
 
 A singleton instance of `Service` is created and used to call `client`.
 
+### Value Store
+The value store supports merging multiple sources using the following precedence order:
+1. Configuration files using the list provided order. **toml** format is the only supported for now.
+2. Environment variables. Variables must be preffixed with the application name 
+3. Command line arguments. Arguments must follow the format: --key=value.
+
+Command line arguments overwrite environment variables and environment variables overwrite configuration files.
+
+```python
+load_config("myapp", ["config.toml"])
+```
+
+
+### Value Injection
+
+Service's value-type attributes are automatically injected from the value store using either the traversal path or a given value store key.
+
+Python [dataclass](https://docs.python.org/3/library/dataclasses.html) and [attrs](https://www.attrs.org/en/stable/) are supported.
+
+```python
+@component()
+@attrs.define
+class Service:
+    attrib1: int
+    attrib2: str
+    attrib3: bool
+
+    ...
+
+class Client:
+    service: Service
+
+    ...
+
+load_config("myapp", ["config.toml"])
+assemble(Client)
+```
+
+config.toml:
+```toml
+service_attrib1 = 10
+service_attrib2 = "mystring"
+service_attrib3 = false
+```
+
+attrib1, attrib2 and attrib3 will be injected using the configuration entries listed above. 
+
+By default, enterprython will use the attribute path convention (notice the **service_** preffix in each of the configuration entries )
+
+If multiple services need to read the same configuration entry, the **setting** decorator let you provide your custom key:
+
+```python
+@component()
+@attrs.define
+class Service:
+    attrib1: int = setting("MYATTRIB1")
+    attrib2: str = setting("MYATTRIB2")
+    attrib3: bool = setting("MYATTRIB3")
+
+    ...
+
+class Client:
+    service: Service
+
+    ...
+
+load_config("myapp", ["config.toml"])
+assemble(Client)
+```
+
+config.toml:
+```toml
+MYATTRIB1 = 10
+MYATTRIB2 = "mystring"
+MYATTRIB3 = false
+```
+
+The value injection provides type-checking and enforces injection of any attribute without defaults.
+To skip injecting an attribute, you can use the attrs/dataclass field decorator to opt-out:
+
+```python
+@component()
+@attrs.define
+class Service:
+    # below attribute WILL be injected from the value store
+    # an entry MUST exist in the value store
+    attrib1: int
+    # below attribute CAN be injected from the value store,
+    # if not provided in value store, then default is used
+    attrib2: str = "test"
+    # below attribute will not be injected
+    # any entry in the value store will be ignored
+    attrib3: bool = attrs.field(init=False, default=True)
+```
+
+
+
 Requirements and Installation
 -----------------------------
 
