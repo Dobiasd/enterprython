@@ -285,29 +285,38 @@ def setting(key: str) -> _Setting:
     """Attribute decorator"""
     return _Setting(key)
 
+def _get_settings_from_dataclass(the_class: Callable[..., TypeT], annotations: Dict[str, type]):
+    """get settings from dataclass"""
+    settings : List[_Setting] = []
+    for annotation_name, annotation_type in annotations.items():
+        default = getattr(the_class, annotation_name, None)
+        if isinstance(default, _Setting):
+            settings.append( _SettingMetadata(annotation_name, annotation_type, default.key) )
+    return settings
+
+def _get_settings_from_attrs(the_class: Callable[..., TypeT], annotations: Dict[str, type]):
+    """get settings from attrs class"""
+    settings : List[_Setting] = []
+    #default values are stored outside annotations:
+    attributes = getattr(the_class, "__attrs_attrs__", [])
+    for attribute in attributes:
+        default = getattr(attribute, "default", None)
+        attribute_name = getattr(attribute, "name", None)
+        if default and isinstance(default, _Setting):
+            #type is stored in annotation
+            annotation_type = annotations.get(attribute_name, None)
+            settings.append(_SettingMetadata(attribute_name, annotation_type, default.key))
+    return settings
+
 def _get_settings(the_class: Callable[...,TypeT]) -> List[_Setting]:
     """Gets the class attributes decorated as settings"""
     settings : List[_Setting] = []
-    #@dataclass support:
     cls_annotations = the_class.__dict__.get('__annotations__', {})
     if cls_annotations:
-        for annotation_name, annotation_type in cls_annotations.items():
-            default = getattr(the_class, annotation_name, None)
-            if isinstance(default, _Setting):
-                settings.append( _SettingMetadata(annotation_name, annotation_type, default.key) )
-    if len(settings) == 0:
-        #attrs support - default values are stored outside annotations:
-        attributes = getattr(the_class, "__attrs_attrs__", [])
-        for attribute in attributes:
-            default = getattr(attribute, "default", None)
-            attribute_name = getattr(attribute, "name", None)
-            if default and isinstance(default, _Setting):
-                #type is stored in annotation
-                annotation_type = cls_annotations.get(annotation_name, None)
-                settings.append(_SettingMetadata(attribute_name, annotation_type, default.key))
-                
-
-
+        if hasattr(the_class, '__dataclass_fields__'):
+            settings = _get_settings_from_dataclass(the_class, cls_annotations)
+        elif hasattr(the_class, "__attrs_attrs__"):
+            settings = _get_settings_from_attrs(the_class, cls_annotations)
     return settings
 
 def component(singleton: bool = True,  # pylint: disable=dangerous-default-value
