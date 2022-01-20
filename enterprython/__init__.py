@@ -6,6 +6,8 @@ from ._inject import factory
 from ._inject import set_values
 from ._inject import set_values_from_config
 from ._inject import value
+from ._inject import load_config
+from ._inject import setting
 
 name = "enterprython"
 

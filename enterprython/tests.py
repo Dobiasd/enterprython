@@ -5,9 +5,11 @@ enterprython - tests
 import configparser
 import unittest
 from abc import ABC, abstractmethod
-from typing import NamedTuple, List
+from typing import Dict, NamedTuple, List
+from dataclasses import dataclass
+from attrs import define
 
-from ._inject import assemble, component, factory, value
+from ._inject import assemble, component, factory, value, load_config, setting
 from ._inject import set_values_from_config, add_values, set_values
 
 __author__ = "Tobias Hermann"
@@ -39,6 +41,41 @@ class Service(ServiceInterface):
 class ServiceNonSingleton:
     """Example service"""
 
+@component()
+@define
+class ServiceWithValues:
+    """Service with values"""
+    attrib1: int
+    attrib2: str
+    attrib3: bool
+
+    def greet(self, name:str) -> str:
+        return f'Hello, {name}!{self.attrib1},{self.attrib2},{self.attrib3}'
+        
+
+@component()
+@define
+class ServiceWithValuesAndSettingDecorator:
+    """Class with values demoing setting decorator"""
+    attrib3: bool
+    #inject below attributes from given config keys:
+    attrib1: int = setting("COMMON_ATTRIB1")
+    attrib2: str = setting("COMMON_ATTRIB2")
+
+    def greet(self, name:str) -> str:
+        return f'Hello, {name}!{self.attrib1},{self.attrib2},{self.attrib3}'
+
+@component()
+@dataclass
+class ServiceWithValuesAndSettingDecoratorDc:
+    """Class with values demoing setting decorator"""
+    attrib3: bool
+    #inject below attributes from given config keys:
+    attrib1: int = setting("COMMON_ATTRIB1")
+    attrib2: str = setting("COMMON_ATTRIB2")
+
+    def greet(self, name:str) -> str:
+        return f'Hello, {name}!{self.attrib1},{self.attrib2},{self.attrib3}'
 
 class WithValue:
     """Example class using a configuration value"""
@@ -63,6 +100,26 @@ class Client:
         """Uses Service to greet the world."""
         return self._service.greet("World")
 
+@define
+class ClientWithValueInjection:
+    service: ServiceWithValues
+
+    def greet_world(self) ->str:
+        return self.service.greet("World")
+
+@define
+class ClientWithValueInjectionSettingDecorator:
+    service: ServiceWithValuesAndSettingDecorator
+
+    def greet_world(self) ->str:
+        return self.service.greet("World")
+
+@dataclass
+class ClientWithValueInjectionSettingDecoratorDc:
+    service: ServiceWithValuesAndSettingDecoratorDc
+
+    def greet_world(self) ->str:
+        return self.service.greet("World")
 
 class ServiceFromFactory(NamedTuple):
     """Depends on nothing."""
@@ -125,7 +182,6 @@ class Layer3(NamedTuple):
 class Layer2(NamedTuple):
     """Depends on Layer3"""
     service: Layer3
-
 
 class Layer1(NamedTuple):
     """Depends on Layer2"""
@@ -444,3 +500,25 @@ class ProfileTest(unittest.TestCase):
         """Object is not available."""
         with self.assertRaises(TypeError):
             assemble(ClientDependingOnInterfaceProfile, "unknown_profile")
+
+class ValueInjectionTests(unittest.TestCase):
+    
+    APP_NAME = "TEST"
+
+    def _load_config(self):
+        load_config(self.APP_NAME, ["config.toml"])
+
+    def test_inject_basic(self):
+        self._load_config()
+        msg = assemble(ClientWithValueInjection).greet_world()
+        self.assertEqual("Hello, World!10,test WOW,False", msg)
+    
+    def test_inject_setting_decorator(self):
+        self._load_config()
+        msg = assemble(ClientWithValueInjectionSettingDecorator).greet_world()
+        self.assertEqual("Hello, World!55,test common,False", msg)
+    
+    def test_inject_setting_decorator_dataclass(self):
+        self._load_config()
+        msg = assemble(ClientWithValueInjectionSettingDecoratorDc).greet_world()
+        self.assertEqual("Hello, World!55,test common,False", msg)
