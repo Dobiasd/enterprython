@@ -455,9 +455,11 @@ def _get_list_type_elem_type(list_type: Callable[..., TypeT]) -> Callable[..., A
 def load_config(app_name: str, paths: List[str]):
     """loads the configuration from a list of files,
     then from environment variables and finally from command arguments"""
-    #todo: handle exceptions:
     for path in paths:
-        _merge_dicts(ENTERPRYTHON_VALUE_STORE, toml.load(path))
+        try:
+            _merge_dicts(ENTERPRYTHON_VALUE_STORE, toml.load(path))
+        except Exception as exception:
+            raise Exception(f"Error loading file: {path}") from exception 
     _merge_dicts(ENTERPRYTHON_VALUE_STORE, _load_env_vars(app_name))
     _merge_dicts(ENTERPRYTHON_VALUE_STORE, _load_command_args())
 
