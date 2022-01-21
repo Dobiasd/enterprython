@@ -459,7 +459,7 @@ def load_config(app_name: str, paths: List[str]):
         try:
             _merge_dicts(ENTERPRYTHON_VALUE_STORE, toml.load(path))
         except Exception as exception:
-            raise Exception(f"Error loading file: {path}") from exception 
+            raise Exception(f"Error loading file: {path}") from exception
     _merge_dicts(ENTERPRYTHON_VALUE_STORE, _load_env_vars(app_name))
     _merge_dicts(ENTERPRYTHON_VALUE_STORE, _load_command_args())
 

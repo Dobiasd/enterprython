@@ -3,23 +3,29 @@ enterprython - tests
 """
 
 import configparser
+import os
+import sys
 import unittest
+from unittest.mock import patch
 from abc import ABC, abstractmethod
-from typing import NamedTuple, List
+from typing import Dict, NamedTuple, List
 import dataclasses as dc
 import attrs
 
 from ._inject import assemble, component, factory, value, load_config, setting
-from ._inject import set_values_from_config, add_values, set_values
+from ._inject import set_values_from_config, add_values, set_values, ValueType
 
 __author__ = "Tobias Hermann"
 __copyright__ = "Copyright 2018, Tobias Hermann"
 __email__ = "editgym@gmail.com"
 __license__ = "MIT"
 
+_APP_NAME = "TEST"
+
+def _load_config():
+    load_config(_APP_NAME, ["config.toml"])
 
 # pylint: disable=too-few-public-methods
-
 class ServiceInterface(ABC):
     """Defines interface of a service that can greet."""
 
@@ -51,7 +57,19 @@ class ServiceWithValues:
 
     def greet(self, name:str) -> str:
         return f'Hello, {name}!{self.attrib1},{self.attrib2},{self.attrib3}'
-        
+
+@component()
+@attrs.define
+class ServiceWithValuesPrecedence:
+    """Service with values"""
+    precedence_attrib1: int
+    precedence_attrib2: int
+
+    def get_value_attrib1(self):
+        return self.precedence_attrib1
+
+    def get_value_attrib2(self):
+        return self.precedence_attrib2
 
 @component()
 @attrs.define
@@ -65,30 +83,31 @@ class ServiceWithValuesAndSettingDecorator:
     def greet(self, name:str) -> str:
         return f'Hello, {name}!{self.attrib1},{self.attrib2},{self.attrib3}'
 
-@component()
+class BaseServicePreventValueInjection(ABC):
+    @abstractmethod
+    def get_value(self) -> ValueType:
+        """return non injectable value"""
+
+@component(profiles="attrs")
 @attrs.define
-class ServiceWithValuesPreventAttributeInjection:
+class ServiceWithValuesPreventAttributeInjection(BaseServicePreventValueInjection):
     """Class with values showing how to prevent injection"""
-    attrib1: int
-    attrib2: str
     # to prevent the attribute value injection using attrs or dataclass field decorator:
     # 1. use init=False to exclude it from the generated __init__ method
     # 2. set the default value
     attrib3: bool = attrs.field(init=False, default=True)
 
-    def greet(self, name:str) -> str:
-        return f'Hello, {name}!{self.attrib1},{self.attrib2},{self.attrib3}'
+    def get_value(self) -> ValueType:
+        return self.attrib3
 
-@component()
+@component(profiles="dataclass")
 @dc.dataclass
-class ServiceWithValuesPreventAttributeInjectionDc:
+class ServiceWithValuesPreventAttributeInjectionDc(BaseServicePreventValueInjection):
     """Class with values, showing how to prevent injection"""
-    attrib1: int
-    attrib2: str
     attrib3: bool = dc.field(init=False, default=True)
 
-    def greet(self, name:str) -> str:
-        return f'Hello, {name}!{self.attrib1},{self.attrib2},{self.attrib3}'
+    def get_value(self) -> ValueType:
+        return self.attrib3
 
 @component()
 @dc.dataclass
@@ -133,6 +152,16 @@ class ClientWithValueInjection:
         return self.service.greet("World")
 
 @attrs.define
+class ClientWithValuePrecedence:
+    service: ServiceWithValuesPrecedence
+
+    def get_value_attrib1(self) -> ValueType:
+        return self.service.get_value_attrib1()
+
+    def get_value_attrib2(self) -> ValueType:
+        return self.service.get_value_attrib2()
+
+@attrs.define
 class ClientWithValueInjectionSettingDecorator:
     service: ServiceWithValuesAndSettingDecorator
 
@@ -141,19 +170,10 @@ class ClientWithValueInjectionSettingDecorator:
 
 @attrs.define
 class ClientWithValuesPreventInjection:
-    service: ServiceWithValuesPreventAttributeInjection
+    service: BaseServicePreventValueInjection
 
-    def greet_world(self) -> str:
-        return self.service.greet("World")
-
-
-@dc.dataclass
-class ClientWithValuesPreventInjectionDc:
-    service: ServiceWithValuesPreventAttributeInjectionDc
-
-    def greet_world(self) -> str:
-        return self.service.greet("World")
-
+    def get_value(self) -> Dict[str, ValueType]:
+        return self.service.get_value()
 
 @dc.dataclass
 class ClientWithValueInjectionSettingDecoratorDc:
@@ -543,33 +563,56 @@ class ProfileTest(unittest.TestCase):
             assemble(ClientDependingOnInterfaceProfile, "unknown_profile")
 
 class ValueInjectionTests(unittest.TestCase):
-    
-    APP_NAME = "TEST"
-
-    def _load_config(self):
-        load_config(self.APP_NAME, ["config.toml"])
+    @classmethod
+    def setUpClass(cls):
+        _load_config()
 
     def test_inject_basic(self):
-        self._load_config()
         msg = assemble(ClientWithValueInjection).greet_world()
         self.assertEqual("Hello, World!10,test WOW,False", msg)
-    
+
     def test_inject_setting_decorator(self):
-        self._load_config()
         msg = assemble(ClientWithValueInjectionSettingDecorator).greet_world()
         self.assertEqual("Hello, World!55,test common,False", msg)
-    
+
     def test_inject_setting_decorator_dataclass(self):
-        self._load_config()
         msg = assemble(ClientWithValueInjectionSettingDecoratorDc).greet_world()
         self.assertEqual("Hello, World!55,test common,False", msg)
-    
-    def test_inject_prevent_attribute_injection(self):
-        self._load_config()
-        msg = assemble(ClientWithValuesPreventInjection).greet_world()
-        self.assertEqual("Hello, World!10,test WOW,True", msg)
-    
+
+    def test_inject_prevent_attribute_injection_attrs(self):
+        val = assemble(ClientWithValuesPreventInjection, profile="attrs").get_value()
+        self.assertEqual(val, True)
+
     def test_inject_prevent_attribute_injection_dataclass(self):
-        self._load_config()
-        msg = assemble(ClientWithValuesPreventInjectionDc).greet_world()
-        self.assertEqual("Hello, World!10,test WOW,True", msg)
+        val = assemble(ClientWithValuesPreventInjection, profile="dataclass").get_value()
+        self.assertEqual(val, True)
+
+
+class ValueInjectionPrecedenceTest(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        """patches environment variables and command line args before testing precedence"""
+        cls.env_patcher = patch.dict(os.environ, {
+            f"{_APP_NAME}_SERVICE_PRECEDENCE_ATTRIB1": "11",
+            f"{_APP_NAME}_SERVICE_PRECEDENCE_ATTRIB2": "12" })
+        cls.arg_patcher = patch.object(sys, "argv", ["--service_precedence_attrib2=13"])
+        cls.env_patcher.start()
+        cls.arg_patcher.start()
+
+        _load_config()
+        super().setUpClass()
+
+    @classmethod
+    def tearDownClass(cls):
+        super().tearDownClass()
+        cls.env_patcher.stop()
+        cls.arg_patcher.stop()
+
+    def test_inject_env_arg_precedence(self):
+        client = assemble(ClientWithValuePrecedence)
+        val_attrib1 = client.get_value_attrib1()
+        val_attrib2 = client.get_value_attrib2()
+        #attrib1 is overwritten from env vars:
+        self.assertEqual(val_attrib1, 11)
+        #attrib2 is overwritten from args:
+        self.assertEqual(val_attrib2, 13)
