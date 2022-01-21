@@ -25,7 +25,7 @@ class _Setting():
         self.key = key
 
 class _SettingMetadata():
-    def __init__(self, name:str, typ:Type, key:str):
+    def __init__(self, name:str, typ:Optional[Type], key:str):
         self.name = name
         self.typ = typ
         self.key = key
@@ -70,7 +70,7 @@ class _Component(Generic[TypeT]):  # pylint: disable=unsubscriptable-object
         """Underlying target type of component."""
         return self._type
 
-    def get_setting(self, name) -> _SettingMetadata:
+    def get_setting(self, name) -> Optional[_SettingMetadata]:
         """Search setting by name"""
         for entry in self._settings:
             if entry.name == name:
@@ -156,7 +156,7 @@ def set_values_from_config(config: configparser.ConfigParser) -> None:
 
 
 def _create(the_type: Callable[..., TypeT],
-            profile: Optional[str] = None) -> Tuple[Optional[TypeT], _Component]:
+            profile: Optional[str] = None) -> Tuple[Optional[TypeT], Optional[_Component[Any]]]:
 
     stored_component = _get_component(the_type, profile)
     stored_factory = _get_factory(the_type, profile)
@@ -170,8 +170,8 @@ def _create(the_type: Callable[..., TypeT],
     return (instance, stored_component)
 
 
-def _get_parameters(signature: inspect.Signature) -> Dict[str, tuple[Type[Any], bool]]:
-    parameters: Dict[str, Type[Any]] = {}
+def _get_parameters(signature: inspect.Signature) -> Dict[str, Tuple[Type[Any], bool]]:
+    parameters: Dict[str, Tuple[Type[Any], bool]] = {}
     for param in signature.parameters.values():
         if param.name == 'self':
             continue
@@ -192,7 +192,7 @@ def _append_path(preffix: str, path: str) -> str:
     path = path.lstrip("_")
     return path.upper() if len(preffix) == 0 else preffix+"_"+path.upper()
 
-def _get_value_store_key(parameter_path: str, parameter_name:str, comp:_Component) -> str:
+def _get_value_store_key(parameter_path: str, parameter_name:str, comp:Optional[_Component[Any]]) -> str:
     """Gets the default key based on the attribute path or the statically defined setting key"""
     key = parameter_path
     if comp:
@@ -287,7 +287,7 @@ def setting(key: str) -> _Setting:
 
 def _get_settings_from_dataclass(the_class: Callable[..., TypeT], annotations: Dict[str, type]):
     """get settings from dataclass"""
-    settings : List[_Setting] = []
+    settings : List[_SettingMetadata] = []
     for annotation_name, annotation_type in annotations.items():
         default = getattr(the_class, annotation_name, None)
         if isinstance(default, _Setting):
@@ -296,21 +296,21 @@ def _get_settings_from_dataclass(the_class: Callable[..., TypeT], annotations: D
 
 def _get_settings_from_attrs(the_class: Callable[..., TypeT], annotations: Dict[str, type]):
     """get settings from attrs class"""
-    settings : List[_Setting] = []
+    settings : List[_SettingMetadata] = []
     #default values are stored outside annotations:
     attributes = getattr(the_class, "__attrs_attrs__", [])
     for attribute in attributes:
         default = getattr(attribute, "default", None)
-        attribute_name = getattr(attribute, "name", None)
+        attribute_name = str(getattr(attribute, "name", None))
         if default and isinstance(default, _Setting):
             #type is stored in annotation
             annotation_type = annotations.get(attribute_name, None)
             settings.append(_SettingMetadata(attribute_name, annotation_type, default.key))
     return settings
 
-def _get_settings(the_class: Callable[...,TypeT]) -> List[_Setting]:
+def _get_settings(the_class: Callable[...,TypeT]) -> List[_SettingMetadata]:
     """Gets the class attributes decorated as settings"""
-    settings : List[_Setting] = []
+    settings : List[_SettingMetadata] = []
     cls_annotations = the_class.__dict__.get('__annotations__', {})
     if cls_annotations:
         if hasattr(the_class, '__dataclass_fields__'):
@@ -457,9 +457,9 @@ def load_config(app_name: str, paths: List[str]):
     then from environment variables and finally from command arguments"""
     for path in paths:
         try:
-            _merge_dicts(ENTERPRYTHON_VALUE_STORE, toml.load(path))
+            _merge_dicts(ENTERPRYTHON_VALUE_STORE, toml.load(path)) # type: ignore
         except Exception as exception:
-            raise Exception(f"Error loading file: {path}") from exception 
+            raise Exception(f"Error loading file: {path}") from exception
     _merge_dicts(ENTERPRYTHON_VALUE_STORE, _load_env_vars(app_name))
     _merge_dicts(ENTERPRYTHON_VALUE_STORE, _load_command_args())
 

@@ -7,3 +7,5 @@ service_non_injectable = "how could this be injected???"
 
 common_attrib1 = 55
 common_attrib2 = "test common"
+
+service_precedence_attrib1=10
