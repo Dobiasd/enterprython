@@ -192,7 +192,9 @@ def _append_path(preffix: str, path: str) -> str:
     path = path.lstrip("_")
     return path.upper() if len(preffix) == 0 else preffix+"_"+path.upper()
 
-def _get_value_store_key(parameter_path: str, parameter_name:str, comp:Optional[_Component[Any]]) -> str:
+def _get_value_store_key(parameter_path: str,
+    parameter_name:str,
+    comp:Optional[_Component[Any]]) -> str:
     """Gets the default key based on the attribute path or the statically defined setting key"""
     key = parameter_path
     if comp:
@@ -460,9 +462,8 @@ def load_config(app_name: str, paths: List[str]):
             _merge_dicts(ENTERPRYTHON_VALUE_STORE, toml.load(path)) # type: ignore
         except Exception as exception:
             raise Exception(f"Error loading file: {path}") from exception
-    _merge_dicts(ENTERPRYTHON_VALUE_STORE, _load_env_vars(app_name))
-    _merge_dicts(ENTERPRYTHON_VALUE_STORE, _load_command_args())
-
+    _merge_dicts(ENTERPRYTHON_VALUE_STORE, load_env_vars(app_name))
+    _merge_dicts(ENTERPRYTHON_VALUE_STORE, load_command_args())
 
 def _merge_dicts(dict1: Dict[str, ValueType], dict2: Dict[str, ValueType]) -> None:
     """
@@ -471,7 +472,7 @@ def _merge_dicts(dict1: Dict[str, ValueType], dict2: Dict[str, ValueType]) -> No
     for key, val in dict2.items():
         dict1[key.upper()] = val
 
-def _load_env_vars (app_name:str) -> Dict[str, ValueType]:
+def load_env_vars (app_name:str) -> Dict[str, ValueType]:
     values: Dict[str, Any] = {}
     preffix = f"{app_name.upper()}_"
     preffix_len = len(preffix)
@@ -485,13 +486,13 @@ def _load_env_vars (app_name:str) -> Dict[str, ValueType]:
             values[clean_var_name] = var_value
     return values
 
-def _load_command_args() -> Dict[str, ValueType]:
+def load_command_args() -> Dict[str, ValueType]:
     values: Dict[str, Any] = {}
     arg_name: str
     arg_value: str
     for arg in sys.argv:
-        if arg.startswith("--"):
-            arg_name, arg_value = arg.lstrip("-").upper().split("=")
+        if arg.startswith("--") and arg.find("=") > 0:
+            arg_name, arg_value = arg.lstrip("-").split("=")
             arg_value = arg_value.strip()
             values[arg_name] = arg_value
     return values
