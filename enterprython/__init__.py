@@ -8,6 +8,8 @@ from ._inject import set_values_from_config
 from ._inject import value
 from ._inject import load_config
 from ._inject import setting
+from ._inject import load_command_args
+from ._inject import load_env_vars
 
 name = "enterprython"
 
