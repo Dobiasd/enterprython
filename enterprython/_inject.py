@@ -20,31 +20,35 @@ else:
 
 TypeT = TypeVar('TypeT')
 
-class _Setting():
+class _Setting(): # pylint: disable=too-few-public-methods
     def __init__(self, key:str):
         self.key = key
 
-class _SettingMetadata():
+class _SettingMetadata(): # pylint: disable=too-few-public-methods
     def __init__(self, name:str, typ:Optional[Type], key:str):
         self.name = name
         self.typ = typ
         self.key = key
 
+class _ParameterMetadata(): # pylint: disable=too-few-public-methods
+    def __init__(self, name: str, typ: Optional[Type], has_default:bool):
+        self.name = name
+        self.typ = typ
+        self.has_default = has_default
+
 class _Component(Generic[TypeT]):  # pylint: disable=unsubscriptable-object
     """Internal class to store components for DI."""
 
     def __init__(self, the_type: Callable[..., TypeT],
-                 target_types: Tuple[Type[Any], ...],
                  singleton: bool,
-                 profiles: List[str],
-                 settings: List[_SettingMetadata]) -> None:
+                 profiles: List[str]) -> None:
         """Figure out and store base classes."""
         self._type = the_type
         self._is_singleton = singleton
         self._profiles = profiles
-        self._target_types = target_types
         self._instance: Optional[TypeT] = None
-        self._settings = settings
+        self._target_types:Tuple[Type[Any], ...] = inspect.getmro(the_type) # type: ignore
+        self._settings = _get_settings(the_type)
 
     def matches(self, the_type: Callable[..., TypeT],
                 profile: Optional[str]) -> bool:
@@ -170,8 +174,9 @@ def _create(the_type: Callable[..., TypeT],
     return (instance, stored_component)
 
 
-def _get_parameters(signature: inspect.Signature) -> Dict[str, Tuple[Type[Any], bool]]:
-    parameters: Dict[str, Tuple[Type[Any], bool]] = {}
+def _get_parameters_from_signature(the_type: Callable[..., TypeT]) -> List[_ParameterMetadata]:
+    signature = inspect.signature(the_type)
+    parameters: List[_ParameterMetadata] = []
     for param in signature.parameters.values():
         if param.name == 'self':
             continue
@@ -180,10 +185,8 @@ def _get_parameters(signature: inspect.Signature) -> Dict[str, Tuple[Type[Any], 
                             'supported in target functions.')
         if param.annotation is inspect.Signature.empty:
             raise TypeError('Parameter needs needs a type annotation.')
-        #dbenavid: extend to return if has default value
-        parameters[param.name] =  ( param.annotation,
-                                    param.default != inspect.Signature.empty
-                                )
+        parameters.append(_ParameterMetadata(param.name, param.annotation,
+                                            param.default != inspect.Signature.empty))
     return parameters
 
 #dbenavid
@@ -202,6 +205,15 @@ def _get_value_store_key(parameter_path: str,
         if item:
             key = item.key
     return key
+
+def _missing_value(the_type: Callable[..., TypeT],
+    param: _ParameterMetadata, param_path:str) -> None:
+
+    msg = f"{param.name} attribute in class"
+    msg += f"{the_type.__module__}.{the_type.__name__} "
+    msg += "is not defined in value store. "
+    msg += f"Provide it using key: {param_path} or an static setting key"
+    raise AttributeError(msg)
 
 def _enforce_type(expected_type: Type, key:str) -> ValueType:
     stored_value: ValueType
@@ -234,44 +246,35 @@ def _assemble_impl(the_type: Callable[..., TypeT],
 
     arguments: Dict[str, Any] = kwargs
 
-    signature = inspect.signature(the_type)
-
-    parameters = _get_parameters(signature)
-
     uses_manual_args = False
-    for parameter_name, parameter_metadata in parameters.items():
-        parameter_path = _append_path(inject_path, parameter_name)
-        #unpack parameter metadata
-        parameter_type, parameter_has_default = parameter_metadata
-        if parameter_name in arguments:
+    for param in _get_parameters_from_signature(the_type):
+        parameter_path = _append_path(inject_path, param.name)
+        if param.name in arguments:
             uses_manual_args = True
             continue
-        if _is_list_type(parameter_type):
+        if _is_list_type(param.typ):
             parameter_components = _get_components(
-                _get_list_type_elem_type(parameter_type), profile)
-            arguments[parameter_name] = list(map(_assemble_impl,
+                _get_list_type_elem_type(param.typ), profile)
+            arguments[param.name] = list(map(_assemble_impl,
                                                  map(lambda comp: comp.get_type(),
                                                      parameter_components)))
-        elif _is_value_type(parameter_type):
-            key = _get_value_store_key(parameter_path, parameter_name, stored_component)
+        elif _is_value_type(param.typ):
+            key = _get_value_store_key(parameter_path, param.name, stored_component)
             if key in ENTERPRYTHON_VALUE_STORE:
-                arguments[parameter_name] = _enforce_type(parameter_type, key)
-            elif not parameter_has_default:
-                msg : str = f"{parameter_name} attribute in class"
-                msg += f"{the_type.__module__}.{the_type.__name__} "
-                msg += "is not defined in value store. "
-                msg += f"Provide it using key: {parameter_path} or an static setting key"
-                raise AttributeError(msg)
+                arguments[param.name] = _enforce_type(param.typ, key)
+            elif not param.has_default:
+                _missing_value(the_type, param, parameter_path)
+
         else:
-            parameter_component = _get_component(parameter_type, profile)
-            param_factory = _get_factory(parameter_type, profile)
+            parameter_component = _get_component(param.typ, profile)
+            param_factory = _get_factory(param.typ, profile)
             if parameter_component is not None:
-                arguments[parameter_name] = _assemble_impl(
+                arguments[param.name] = _assemble_impl(
                     parameter_component.get_type(), profile, parameter_path)  # parameter_type?
             elif param_factory:
-                arguments[parameter_name] = param_factory.get_instance()
+                arguments[param.name] = param_factory.get_instance()
+
     result = the_type(**arguments)
-    stored_component = _get_component(the_type, profile)
     if stored_component and not uses_manual_args:
         stored_component.set_instance_if_singleton(result)
     return result
@@ -332,9 +335,7 @@ def component(singleton: bool = True,  # pylint: disable=dangerous-default-value
             raise TypeError('Only classes can be registered as components.')
         if inspect.isabstract(the_class):
             raise TypeError('Can not register abstract class as component.')
-        target_types = inspect.getmro(the_class)  # type: ignore
-        settings = _get_settings(the_class)
-        _add_component(the_class, target_types, singleton, profiles, settings)
+        _add_component(the_class, singleton, profiles)
         return the_class
     return register
 
@@ -393,12 +394,10 @@ def _get_factory(the_type: Callable[..., TypeT],
 
 
 def _add_component(the_type: Callable[..., TypeT],
-                   target_types: Tuple[Type[Any], ...],
                    singleton: bool,
-                   profiles: List[str],
-                   settings: List[_SettingMetadata]) -> None:
+                   profiles: List[str]) -> None:
     """Store new component for DI."""
-    new_component = _Component(the_type, target_types, singleton, profiles, settings)
+    new_component = _Component(the_type, singleton, profiles)
     if _get_component(new_component.get_type(), None) is not None:
         raise TypeError(f'{the_type.__name__} '
                         'already registered as component.')
@@ -473,6 +472,7 @@ def _merge_dicts(dict1: Dict[str, ValueType], dict2: Dict[str, ValueType]) -> No
         dict1[key.upper()] = val
 
 def load_env_vars (app_name:str) -> Dict[str, ValueType]:
+    """Load environment variables"""
     values: Dict[str, Any] = {}
     preffix = f"{app_name.upper()}_"
     preffix_len = len(preffix)
@@ -487,6 +487,7 @@ def load_env_vars (app_name:str) -> Dict[str, ValueType]:
     return values
 
 def load_command_args() -> Dict[str, ValueType]:
+    """Load command line arguments"""
     values: Dict[str, Any] = {}
     arg_name: str
     arg_value: str
