@@ -8,7 +8,7 @@ import sys
 import unittest
 from unittest.mock import patch
 from abc import ABC, abstractmethod
-from typing import Dict, NamedTuple, List
+from typing import NamedTuple, List
 import attrs
 
 from ._inject import assemble, component, factory, value, load_config, setting
@@ -17,8 +17,6 @@ from ._inject import set_values_from_config, add_values, set_values, ValueType
 VER_3_7_AND_UP = sys.version_info[:3] >= (3, 7, 0)  # PEP 557 (dataclasses)
 if VER_3_7_AND_UP:
     import dataclasses as dc
-else:
-    pass
 
 
 __author__ = "Tobias Hermann"
