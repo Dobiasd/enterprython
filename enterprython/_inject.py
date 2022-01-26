@@ -34,17 +34,15 @@ class _Component(Generic[TypeT]):  # pylint: disable=unsubscriptable-object
     """Internal class to store components for DI."""
 
     def __init__(self, the_type: Callable[..., TypeT],
-                 target_types: Tuple[Type[Any], ...],
                  singleton: bool,
-                 profiles: List[str],
-                 settings: List[_SettingMetadata]) -> None:
+                 profiles: List[str]) -> None:
         """Figure out and store base classes."""
         self._type = the_type
         self._is_singleton = singleton
         self._profiles = profiles
-        self._target_types = target_types
         self._instance: Optional[TypeT] = None
-        self._settings = settings
+        self._target_types:Tuple[Type[Any], ...] = inspect.getmro(the_type) # type: ignore
+        self._settings = _get_settings(the_type)
 
     def matches(self, the_type: Callable[..., TypeT],
                 profile: Optional[str]) -> bool:
@@ -332,9 +330,7 @@ def component(singleton: bool = True,  # pylint: disable=dangerous-default-value
             raise TypeError('Only classes can be registered as components.')
         if inspect.isabstract(the_class):
             raise TypeError('Can not register abstract class as component.')
-        target_types = inspect.getmro(the_class)  # type: ignore
-        settings = _get_settings(the_class)
-        _add_component(the_class, target_types, singleton, profiles, settings)
+        _add_component(the_class, singleton, profiles)
         return the_class
     return register
 
@@ -393,12 +389,10 @@ def _get_factory(the_type: Callable[..., TypeT],
 
 
 def _add_component(the_type: Callable[..., TypeT],
-                   target_types: Tuple[Type[Any], ...],
                    singleton: bool,
-                   profiles: List[str],
-                   settings: List[_SettingMetadata]) -> None:
+                   profiles: List[str]) -> None:
     """Store new component for DI."""
-    new_component = _Component(the_type, target_types, singleton, profiles, settings)
+    new_component = _Component(the_type, singleton, profiles)
     if _get_component(new_component.get_type(), None) is not None:
         raise TypeError(f'{the_type.__name__} '
                         'already registered as component.')
