@@ -472,6 +472,7 @@ def _merge_dicts(dict1: Dict[str, ValueType], dict2: Dict[str, ValueType]) -> No
         dict1[key.upper()] = val
 
 def load_env_vars (app_name:str) -> Dict[str, ValueType]:
+    """Load environment variables"""
     values: Dict[str, Any] = {}
     preffix = f"{app_name.upper()}_"
     preffix_len = len(preffix)
@@ -486,6 +487,7 @@ def load_env_vars (app_name:str) -> Dict[str, ValueType]:
     return values
 
 def load_command_args() -> Dict[str, ValueType]:
+    """Load command line arguments"""
     values: Dict[str, Any] = {}
     arg_name: str
     arg_value: str
