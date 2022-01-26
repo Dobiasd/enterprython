@@ -31,7 +31,7 @@ class _SettingMetadata(): # pylint: disable=too-few-public-methods
         self.key = key
 
 class _ParameterMetadata(): # pylint: disable=too-few-public-methods
-    def __init__(self, name: str, typ: Optional[Type], has_default:bool):
+    def __init__(self, name: str, typ: Type, has_default:bool):
         self.name = name
         self.typ = typ
         self.has_default = has_default

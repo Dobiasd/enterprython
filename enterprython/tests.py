@@ -9,11 +9,17 @@ import unittest
 from unittest.mock import patch
 from abc import ABC, abstractmethod
 from typing import Dict, NamedTuple, List
-import dataclasses as dc
 import attrs
 
 from ._inject import assemble, component, factory, value, load_config, setting
 from ._inject import set_values_from_config, add_values, set_values, ValueType
+
+VER_3_7_AND_UP = sys.version_info[:3] >= (3, 7, 0)  # PEP 557 (dataclasses)
+if VER_3_7_AND_UP:
+    import dataclasses as dc
+else:
+    pass
+
 
 __author__ = "Tobias Hermann"
 __copyright__ = "Copyright 2018, Tobias Hermann"
@@ -80,8 +86,8 @@ class ServiceWithValuesAndSettingDecorator:
     """Class with values demoing setting decorator"""
     attrib3: bool
     #inject below attributes from given config keys:
-    attrib1: int = setting("COMMON_ATTRIB1")
-    attrib2: str = setting("COMMON_ATTRIB2")
+    attrib1: int = setting("COMMON_ATTRIB1") # type: ignore
+    attrib2: str = setting("COMMON_ATTRIB2") # type: ignore
 
     def greet(self, name:str) -> str:
         """Returns greeting message with values"""
@@ -93,7 +99,7 @@ class BaseServicePreventValueInjection(ABC):
     def get_value(self) -> ValueType:
         """return non injectable value"""
 
-@component(profiles="attrs")
+@component(profiles=["attrs"])
 @attrs.define
 class ServiceWithValuesPreventAttributeInjection(BaseServicePreventValueInjection):
     """Class with values showing how to prevent injection"""
@@ -105,27 +111,28 @@ class ServiceWithValuesPreventAttributeInjection(BaseServicePreventValueInjectio
     def get_value(self) -> ValueType:
         return self.attrib3
 
-@component(profiles="dataclass")
-@dc.dataclass
-class ServiceWithValuesPreventAttributeInjectionDc(BaseServicePreventValueInjection):
-    """Class with values, showing how to prevent injection"""
-    attrib3: bool = dc.field(init=False, default=True)
+if VER_3_7_AND_UP:
+    @component(profiles=["dataclass"])
+    @dc.dataclass
+    class ServiceWithValuesPreventAttributeInjectionDc(BaseServicePreventValueInjection):
+        """Class with values, showing how to prevent injection"""
+        attrib3: bool = dc.field(init=False, default=True)
 
-    def get_value(self) -> ValueType:
-        return self.attrib3
+        def get_value(self) -> ValueType:
+            return self.attrib3
 
-@component()
-@dc.dataclass
-class ServiceWithValuesAndSettingDecoratorDc:
-    """Class with values demoing setting decorator"""
-    attrib3: bool
-    #inject below attributes from given config keys:
-    attrib1: int = setting("COMMON_ATTRIB1")
-    attrib2: str = setting("COMMON_ATTRIB2")
+    @component()
+    @dc.dataclass
+    class ServiceWithValuesAndSettingDecoratorDc:
+        """Class with values demoing setting decorator"""
+        attrib3: bool
+        #inject below attributes from given config keys:
+        attrib1: int = setting("COMMON_ATTRIB1") # type: ignore
+        attrib2: str = setting("COMMON_ATTRIB2") # type: ignore
 
-    def greet(self, name:str) -> str:
-        """Returns greeting message with values"""
-        return f'Hello, {name}!{self.attrib1},{self.attrib2},{self.attrib3}'
+        def greet(self, name:str) -> str:
+            """Returns greeting message with values"""
+            return f'Hello, {name}!{self.attrib1},{self.attrib2},{self.attrib3}'
 
 class WithValue:
     """Example class using a configuration value"""
@@ -186,18 +193,19 @@ class ClientWithValuesPreventInjection:
     """Client preventing value injection"""
     service: BaseServicePreventValueInjection
 
-    def get_value(self) -> Dict[str, ValueType]:
+    def get_value(self) -> ValueType:
         """Returns value."""
         return self.service.get_value()
 
-@dc.dataclass
-class ClientWithValueInjectionSettingDecoratorDc:
-    """Client with value injection and setting decorator"""
-    service: ServiceWithValuesAndSettingDecoratorDc
+if VER_3_7_AND_UP:
+    @dc.dataclass
+    class ClientWithValueInjectionSettingDecoratorDc:
+        """Client with value injection and setting decorator"""
+        service: ServiceWithValuesAndSettingDecoratorDc
 
-    def greet_world(self) ->str:
-        """Returns greeting message with values."""
-        return self.service.greet("World")
+        def greet_world(self) ->str:
+            """Returns greeting message with values."""
+            return self.service.greet("World")
 
 class ServiceFromFactory(NamedTuple):
     """Depends on nothing."""
@@ -595,20 +603,22 @@ class ValueInjectionTests(unittest.TestCase):
         msg = assemble(ClientWithValueInjectionSettingDecorator).greet_world()
         self.assertEqual("Hello, World!55,test common,False", msg)
 
-    def test_inject_setting_decorator_dataclass(self):
-        """Tests value injection using setting decorator and dataclass"""
-        msg = assemble(ClientWithValueInjectionSettingDecoratorDc).greet_world()
-        self.assertEqual("Hello, World!55,test common,False", msg)
+    if VER_3_7_AND_UP:
+        def test_inject_setting_decorator_dataclass(self):
+            """Tests value injection using setting decorator and dataclass"""
+            msg = assemble(ClientWithValueInjectionSettingDecoratorDc).greet_world()
+            self.assertEqual("Hello, World!55,test common,False", msg)
 
     def test_inject_prevent_attribute_injection_attrs(self):
         """Tests value injection prevention using attrs"""
         val = assemble(ClientWithValuesPreventInjection, profile="attrs").get_value()
         self.assertEqual(val, True)
 
-    def test_inject_prevent_attribute_injection_dataclass(self):
-        """Tests value injection prevention using dataclass"""
-        val = assemble(ClientWithValuesPreventInjection, profile="dataclass").get_value()
-        self.assertEqual(val, True)
+    if VER_3_7_AND_UP:
+        def test_inject_prevent_attribute_injection_dataclass(self):
+            """Tests value injection prevention using dataclass"""
+            val = assemble(ClientWithValuesPreventInjection, profile="dataclass").get_value()
+            self.assertEqual(val, True)
 
 
 class ValueInjectionPrecedenceTest(unittest.TestCase):
