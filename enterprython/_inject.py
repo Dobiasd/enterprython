@@ -20,11 +20,11 @@ else:
 
 TypeT = TypeVar('TypeT')
 
-class _Setting():
+class _Setting(): # pylint: disable=too-few-public-methods
     def __init__(self, key:str):
         self.key = key
 
-class _SettingMetadata():
+class _SettingMetadata(): # pylint: disable=too-few-public-methods
     def __init__(self, name:str, typ:Optional[Type], key:str):
         self.name = name
         self.typ = typ
