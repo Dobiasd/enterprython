@@ -17,7 +17,7 @@ from ._inject import set_values_from_config, add_values, set_values, ValueType
 VER_3_7_AND_UP = sys.version_info[:3] >= (3, 7, 0)  # PEP 557 (dataclasses)
 if VER_3_7_AND_UP:
     import dataclasses as dc
-
+print(f"Version info: {sys.version_info}")
 
 __author__ = "Tobias Hermann"
 __copyright__ = "Copyright 2018, Tobias Hermann"
