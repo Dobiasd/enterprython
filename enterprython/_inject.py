@@ -6,6 +6,7 @@ import inspect
 import os
 import sys
 from typing import Any, Callable, Dict, Optional, Type, TypeVar, List, Generic, Union, Tuple
+
 import toml
 
 VER_3_7_AND_UP = sys.version_info[:3] >= (3, 7, 0)  # PEP 560
@@ -19,21 +20,25 @@ else:
 
 TypeT = TypeVar('TypeT')
 
-class _Setting(): # pylint: disable=too-few-public-methods
-    def __init__(self, key:str):
+
+class _Setting:  # pylint: disable=too-few-public-methods
+    def __init__(self, key: str):
         self.key = key
 
-class _SettingMetadata(): # pylint: disable=too-few-public-methods
-    def __init__(self, name:str, typ:Optional[Type[Any]], key:str):
+
+class _SettingMetadata:  # pylint: disable=too-few-public-methods
+    def __init__(self, name: str, typ: Optional[Type[Any]], key: str):
         self.name = name
         self.typ = typ
         self.key = key
 
-class _ParameterMetadata(): # pylint: disable=too-few-public-methods
-    def __init__(self, name: str, typ: Type[Any], has_default:bool):
+
+class _ParameterMetadata:  # pylint: disable=too-few-public-methods
+    def __init__(self, name: str, typ: Type[Any], has_default: bool):
         self.name = name
         self.typ = typ
         self.has_default = has_default
+
 
 class _Component(Generic[TypeT]):  # pylint: disable=unsubscriptable-object
     """Internal class to store components for DI."""
@@ -46,7 +51,7 @@ class _Component(Generic[TypeT]):  # pylint: disable=unsubscriptable-object
         self._is_singleton = singleton
         self._profiles = profiles
         self._instance: Optional[TypeT] = None
-        self._target_types:Tuple[Type[Any], ...] = inspect.getmro(the_type) # type: ignore
+        self._target_types: Tuple[Type[Any], ...] = inspect.getmro(the_type)  # type: ignore
         self._settings = _get_settings(the_type)
 
     def matches(self, the_type: Callable[..., TypeT],
@@ -73,7 +78,7 @@ class _Component(Generic[TypeT]):  # pylint: disable=unsubscriptable-object
         """Underlying target type of component."""
         return self._type
 
-    def get_setting(self, name:str) -> Optional[_SettingMetadata]:
+    def get_setting(self, name: str) -> Optional[_SettingMetadata]:
         """Search setting by name"""
         for entry in self._settings:
             if entry.name == name:
@@ -124,13 +129,13 @@ ENTERPRYTHON_VALUE_STORE: Dict[str, ValueType] = {}
 ENTERPRYTHON_COMPONENTS: List[_Component[Any]] = []
 ENTERPRYTHON_FACTORIES: List[_Factory[Any]] = []
 
+
 def _create(the_type: Callable[..., TypeT],
             profile: Optional[str] = None) -> Tuple[Optional[TypeT], Optional[_Component[Any]]]:
-
     stored_component = _get_component(the_type, profile)
     stored_factory = _get_factory(the_type, profile)
 
-    instance : Optional[TypeT] = None
+    instance: Optional[TypeT] = None
     if stored_factory:
         instance = stored_factory.get_instance()
     elif stored_component:
@@ -151,17 +156,19 @@ def _get_parameters_from_signature(the_type: Callable[..., TypeT]) -> List[_Para
         if param.annotation is inspect.Signature.empty:
             raise TypeError('Parameter needs needs a type annotation.')
         parameters.append(_ParameterMetadata(param.name, param.annotation,
-                                            param.default != inspect.Signature.empty))
+                                             param.default != inspect.Signature.empty))
     return parameters
+
 
 def _append_path(preffix: str, path: str) -> str:
     """Appends the path, handles if preffix is empty"""
     path = path.lstrip("_")
-    return path.upper() if len(preffix) == 0 else preffix+"_"+path.upper()
+    return path.upper() if len(preffix) == 0 else preffix + "_" + path.upper()
+
 
 def _get_value_store_key(parameter_path: str,
-    parameter_name:str,
-    comp:Optional[_Component[Any]]) -> str:
+                         parameter_name: str,
+                         comp: Optional[_Component[Any]]) -> str:
     """Gets the default key based on the attribute path or the statically defined setting key"""
     key = parameter_path
     if comp:
@@ -170,16 +177,17 @@ def _get_value_store_key(parameter_path: str,
             key = item.key
     return key
 
-def _missing_value(the_type: Callable[..., TypeT],
-    param: _ParameterMetadata, param_path:str) -> None:
 
+def _missing_value(the_type: Callable[..., TypeT],
+                   param: _ParameterMetadata, param_path: str) -> None:
     msg = f"{param.name} attribute in class"
     msg += f"{the_type.__module__}.{the_type.__name__} "
     msg += "is not defined in value store. "
     msg += f"Provide it using key: {param_path} or an static setting key"
     raise AttributeError(msg)
 
-def _enforce_type(expected_type: Type[ValueType], key:str) -> ValueType:
+
+def _enforce_type(expected_type: Type[ValueType], key: str) -> ValueType:
     try:
         stored_value = ENTERPRYTHON_VALUE_STORE[key]
         return expected_type(stored_value)
@@ -188,6 +196,7 @@ def _enforce_type(expected_type: Type[ValueType], key:str) -> ValueType:
         msg += f"Expected type: {expected_type} but {type(stored_value)} was given"
         raise ValueError(msg) from err
 
+
 def assemble(the_type: Callable[..., TypeT],
              profile: Optional[str] = None,
              **kwargs: Any) -> TypeT:
@@ -195,10 +204,11 @@ def assemble(the_type: Callable[..., TypeT],
     using constructor injection if needed."""
     return _assemble_impl(the_type, profile, **kwargs)
 
+
 def _assemble_impl(the_type: Callable[..., TypeT],
-             profile: Optional[str] = None,
-             inject_path: str = "",
-             **kwargs: Any) -> TypeT:
+                   profile: Optional[str] = None,
+                   inject_path: str = "",
+                   **kwargs: Any) -> TypeT:
     """Internal implementation of the assemble,
     tracks the traversal path"""
     uses_manual_args = False
@@ -219,8 +229,8 @@ def _assemble_impl(the_type: Callable[..., TypeT],
             parameter_components = _get_components(
                 _get_list_type_elem_type(param.typ), profile)
             arguments[param.name] = list(map(_assemble_impl,
-                                                 map(lambda comp: comp.get_type(),
-                                                     parameter_components)))
+                                             map(lambda comp: comp.get_type(),
+                                                 parameter_components)))
         elif _is_value_type(param.typ):
             key = _get_value_store_key(parameter_path, param.name, stored_component)
             if key in ENTERPRYTHON_VALUE_STORE:
@@ -242,40 +252,42 @@ def _assemble_impl(the_type: Callable[..., TypeT],
         stored_component.set_instance_if_singleton(result)
     return result
 
+
 def setting(key: str) -> _Setting:
     """Attribute decorator"""
     return _Setting(key)
 
-def _get_settings_from_dataclass(the_class: Callable[..., TypeT],
-    annotations: Dict[str, type]) -> List[_SettingMetadata]:
 
+def _get_settings_from_dataclass(the_class: Callable[..., TypeT],
+                                 annotations: Dict[str, type]) -> List[_SettingMetadata]:
     """get settings from dataclass"""
-    settings : List[_SettingMetadata] = []
+    settings: List[_SettingMetadata] = []
     for annotation_name, annotation_type in annotations.items():
         default = getattr(the_class, annotation_name, None)
         if isinstance(default, _Setting):
-            settings.append( _SettingMetadata(annotation_name, annotation_type, default.key) )
+            settings.append(_SettingMetadata(annotation_name, annotation_type, default.key))
     return settings
 
-def _get_settings_from_attrs(the_class: Callable[..., TypeT],
-    annotations: Dict[str, type]) -> List[_SettingMetadata]:
 
+def _get_settings_from_attrs(the_class: Callable[..., TypeT],
+                             annotations: Dict[str, type]) -> List[_SettingMetadata]:
     """get settings from attrs class"""
-    settings : List[_SettingMetadata] = []
-    #default values are stored outside annotations:
+    settings: List[_SettingMetadata] = []
+    # default values are stored outside annotations:
     attributes = getattr(the_class, "__attrs_attrs__", [])
     for attribute in attributes:
         default = getattr(attribute, "default", None)
         attribute_name = str(getattr(attribute, "name", None))
         if default and isinstance(default, _Setting):
-            #type is stored in annotation
+            # type is stored in annotation
             annotation_type = annotations.get(attribute_name, None)
             settings.append(_SettingMetadata(attribute_name, annotation_type, default.key))
     return settings
 
-def _get_settings(the_class: Callable[...,TypeT]) -> List[_SettingMetadata]:
+
+def _get_settings(the_class: Callable[..., TypeT]) -> List[_SettingMetadata]:
     """Gets the class attributes decorated as settings"""
-    settings : List[_SettingMetadata] = []
+    settings: List[_SettingMetadata] = []
     cls_annotations = the_class.__dict__.get('__annotations__', {})
     if cls_annotations:
         if hasattr(the_class, '__dataclass_fields__'):
@@ -283,6 +295,7 @@ def _get_settings(the_class: Callable[...,TypeT]) -> List[_SettingMetadata]:
         elif hasattr(the_class, "__attrs_attrs__"):
             settings = _get_settings_from_attrs(the_class, cls_annotations)
     return settings
+
 
 def component(singleton: bool = True,  # pylint: disable=dangerous-default-value
               profiles: List[str] = []) -> Callable[[Callable[..., TypeT]],  # pylint: disable=dangerous-default-value
@@ -297,6 +310,7 @@ def component(singleton: bool = True,  # pylint: disable=dangerous-default-value
             raise TypeError('Can not register abstract class as component.')
         _add_component(the_class, singleton, profiles)
         return the_class
+
     return register
 
 
@@ -394,8 +408,10 @@ def _is_list_type(the_type: Callable[..., TypeT]) -> bool:
     except TypeError:
         return False
 
-def _is_value_type(the_type: Callable[...,TypeT]) -> bool:
-    return the_type in [bool, float, int, str] # type: ignore
+
+def _is_value_type(the_type: Callable[..., TypeT]) -> bool:
+    return the_type in [bool, float, int, str]  # type: ignore
+
 
 def _is_instance(the_value: TypeT, the_type: Callable[..., TypeT]) -> bool:
     return isinstance(the_value, the_type)  # type: ignore
@@ -413,16 +429,18 @@ def _get_list_type_elem_type(list_type: Callable[..., TypeT]) -> Callable[..., A
     assert len(list_args) == 1
     return list_args[0]  # type: ignore
 
+
 def load_config(app_name: str, paths: List[str]) -> None:
     """loads the configuration from a list of files,
     then from environment variables and finally from command arguments"""
     for path in paths:
         try:
-            _merge_dicts(ENTERPRYTHON_VALUE_STORE, toml.load(path)) # type: ignore
+            _merge_dicts(ENTERPRYTHON_VALUE_STORE, toml.load(path))  # type: ignore
         except Exception as exception:
             raise Exception(f"Error loading file: {path}") from exception
     _merge_dicts(ENTERPRYTHON_VALUE_STORE, load_env_vars(app_name))
     _merge_dicts(ENTERPRYTHON_VALUE_STORE, load_command_args())
+
 
 def _merge_dicts(dict1: Dict[str, ValueType], dict2: Dict[str, ValueType]) -> None:
     """
@@ -431,7 +449,8 @@ def _merge_dicts(dict1: Dict[str, ValueType], dict2: Dict[str, ValueType]) -> No
     for key, val in dict2.items():
         dict1[key.upper()] = val
 
-def load_env_vars (app_name:str) -> Dict[str, ValueType]:
+
+def load_env_vars(app_name: str) -> Dict[str, ValueType]:
     """Load environment variables"""
     values: Dict[str, Any] = {}
     preffix = f"{app_name.upper()}_"
@@ -445,6 +464,7 @@ def load_env_vars (app_name:str) -> Dict[str, ValueType]:
             clean_var_name = var_name[preffix_len:]
             values[clean_var_name] = var_value
     return values
+
 
 def load_command_args() -> Dict[str, ValueType]:
     """Load command line arguments"""
