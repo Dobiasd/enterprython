@@ -214,7 +214,6 @@ def _missing_value(the_type: Callable[..., TypeT],
     raise AttributeError(msg)
 
 def _enforce_type(expected_type: Type[ValueType], key:str) -> ValueType:
-    stored_value: ValueType
     try:
         stored_value = ENTERPRYTHON_VALUE_STORE[key]
         return expected_type(stored_value)
