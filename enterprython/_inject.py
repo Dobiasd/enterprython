@@ -121,7 +121,6 @@ class _Factory(Generic[TypeT]):  # pylint: disable=unsubscriptable-object
 
 ValueType = Union[str, float, int, bool]
 
-#dbenavid: added new
 ENTERPRYTHON_VALUE_STORE: Dict[str, ValueType] = {}
 ENTERPRYTHON_VALUES: Dict[str, Dict[str, ValueType]] = {}
 ENTERPRYTHON_COMPONENTS: List[_Component[Any]] = []
@@ -189,7 +188,6 @@ def _get_parameters_from_signature(the_type: Callable[..., TypeT]) -> List[_Para
                                             param.default != inspect.Signature.empty))
     return parameters
 
-#dbenavid
 def _append_path(preffix: str, path: str) -> str:
     """Appends the path, handles if preffix is empty"""
     path = path.lstrip("_")
