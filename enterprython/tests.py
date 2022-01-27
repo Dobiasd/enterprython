@@ -14,9 +14,12 @@ import attrs
 from ._inject import assemble, component, factory, value, load_config, setting
 from ._inject import set_values_from_config, add_values, set_values, ValueType
 
-VER_3_7_AND_UP = sys.version_info[:3] >= (3, 7, 0)  # PEP 557 (dataclasses)
-if VER_3_7_AND_UP:
+DATACLASS_AVAILABLE = False
+try:
     import dataclasses as dc
+except ImportError:
+    DATACLASS_AVAILABLE = False
+
 print(f"Version info: {sys.version_info}")
 
 __author__ = "Tobias Hermann"
@@ -109,7 +112,7 @@ class ServiceWithValuesPreventAttributeInjection(BaseServicePreventValueInjectio
     def get_value(self) -> ValueType:
         return self.attrib3
 
-if VER_3_7_AND_UP:
+if DATACLASS_AVAILABLE:
     @component(profiles=["dataclass"])
     @dc.dataclass
     class ServiceWithValuesPreventAttributeInjectionDc(BaseServicePreventValueInjection):
@@ -195,7 +198,7 @@ class ClientWithValuesPreventInjection:
         """Returns value."""
         return self.service.get_value()
 
-if VER_3_7_AND_UP:
+if DATACLASS_AVAILABLE:
     @dc.dataclass
     class ClientWithValueInjectionSettingDecoratorDc:
         """Client with value injection and setting decorator"""
@@ -601,7 +604,7 @@ class ValueInjectionTests(unittest.TestCase):
         msg = assemble(ClientWithValueInjectionSettingDecorator).greet_world()
         self.assertEqual("Hello, World!55,test common,False", msg)
 
-    if VER_3_7_AND_UP:
+    if DATACLASS_AVAILABLE:
         def test_inject_setting_decorator_dataclass(self) -> None:
             """Tests value injection using setting decorator and dataclass"""
             msg = assemble(ClientWithValueInjectionSettingDecoratorDc).greet_world()
@@ -612,7 +615,7 @@ class ValueInjectionTests(unittest.TestCase):
         val = assemble(ClientWithValuesPreventInjection, profile="attrs").get_value()
         self.assertEqual(val, True)
 
-    if VER_3_7_AND_UP:
+    if DATACLASS_AVAILABLE:
         def test_inject_prevent_attribute_injection_dataclass(self) -> None:
             """Tests value injection prevention using dataclass"""
             val = assemble(ClientWithValuesPreventInjection, profile="dataclass").get_value()
