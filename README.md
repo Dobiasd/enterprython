@@ -29,7 +29,7 @@ Introduction
 ------------
 
 If you plan to develop [SOLID](https://en.wikipedia.org/wiki/SOLID) / [domain-driven](https://en.wikipedia.org/wiki/Domain-driven_design) (i.e., enterprisey) software, you probably [want](why_you_want_formal_dependency_injection_in_python_too.md) to apply [inversion of control](https://en.wikipedia.org/wiki/Inversion_of_control) in the form of [dependency injection](https://en.wikipedia.org/wiki/Dependency_injection) when writing the constructors of your classes.
-Also you likely want to use a library doing the needed lookups for you based on static type annotations, instead of manually configuring the object graph.
+Also, you likely want to use a library doing the needed lookups for you based on static type annotations, instead of manually configuring the object graph.
 
 `enterprython` provides exactly that.
 
@@ -90,7 +90,7 @@ One singleton instance of `ServiceImpl` is created and injected into `Client`.
 
 This feature enables the use of different profiles.
 For example, you might want to use different classes implementing an interface
-for your production environment compared when running integration tests.
+for your production environment compared to when running integration tests.
 By providing a `profiles` list, you can limit when the component is available.
 
 ```python
@@ -221,10 +221,10 @@ A singleton instance of `Service` is created and used to call `client`.
 ### Value Store
 The value store supports merging multiple sources using the following precedence order:
 1. Configuration files using the list provided order. **toml** format is the only supported for now.
-2. Environment variables. Variables must be preffixed with the application name 
+2. Environment variables. Variables must be prefixed with the application name 
 3. Command line arguments. Arguments must follow the format: --key=value.
 
-Command line arguments overwrite environment variables and environment variables overwrite configuration files.
+Command-line arguments overwrite environment variables and environment variables overwrite configuration files.
 
 To load the value store use the helper function `load_config` as below.
 
@@ -277,9 +277,9 @@ service_attrib2 = "mystring"
 service_attrib3 = false
 ```
 
-attrib1, attrib2 and attrib3 will be injected using the configuration entries listed above. 
+attrib1, attrib2, and attrib3 will be injected using the configuration entries listed above. 
 
-By default, enterprython will use the attribute path convention (notice the **service_** preffix in each of the configuration entries )
+By default, enterprython will use the attribute path convention (notice the **service_** prefix in each of the configuration entries )
 
 If multiple services need to read the same configuration entry, the `setting` decorator let you provide your custom key:
 
@@ -324,7 +324,7 @@ class Service:
     # an entry MUST exist in the value store
     attrib1: int
     # below attribute CAN be injected from the value store,
-    # if not provided in value store, then default is used
+    # if not provided in value store, then the default is used
     attrib2: str = "test"
     # below attribute will not be injected
     # any entry in the value store will be ignored
@@ -342,7 +342,7 @@ You need Python 3.6.5 or higher.
 python3 -m pip install enterprython
 ```
 
-Or, if you like to use latest version from this repository:
+Or, if you like to use the latest version from this repository:
 
 ```bash
 git clone https://github.com/Dobiasd/enterprython
