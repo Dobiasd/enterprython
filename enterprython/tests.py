@@ -8,7 +8,7 @@ import sys
 import unittest
 from unittest.mock import patch
 from abc import ABC, abstractmethod
-from typing import NamedTuple, List
+from typing import Any, NamedTuple, List
 import attrs
 
 from ._inject import assemble, component, factory, value, load_config, setting
@@ -26,7 +26,7 @@ __license__ = "MIT"
 
 _APP_NAME = "TEST"
 
-def _load_config():
+def _load_config() -> None:
     load_config(_APP_NAME, ["config.toml"])
 
 # pylint: disable=too-few-public-methods
@@ -70,11 +70,11 @@ class ServiceWithValuesPrecedence:
     precedence_attrib1: int
     precedence_attrib2: int
 
-    def get_value_attrib1(self):
+    def get_value_attrib1(self) -> int:
         """Returns attribute1 value"""
         return self.precedence_attrib1
 
-    def get_value_attrib2(self):
+    def get_value_attrib2(self) -> int:
         """Returns attribute2 value"""
         return self.precedence_attrib2
 
@@ -588,32 +588,32 @@ class ProfileTest(unittest.TestCase):
 class ValueInjectionTests(unittest.TestCase):
     """Tests value injection"""
     @classmethod
-    def setUpClass(cls):
+    def setUpClass(cls) -> None:
         _load_config()
 
-    def test_inject_basic(self):
+    def test_inject_basic(self) -> None:
         """Tests value injection"""
         msg = assemble(ClientWithValueInjection).greet_world()
         self.assertEqual("Hello, World!10,test WOW,False", msg)
 
-    def test_inject_setting_decorator(self):
+    def test_inject_setting_decorator(self) -> None:
         """Tests value injection using setting decorator"""
         msg = assemble(ClientWithValueInjectionSettingDecorator).greet_world()
         self.assertEqual("Hello, World!55,test common,False", msg)
 
     if VER_3_7_AND_UP:
-        def test_inject_setting_decorator_dataclass(self):
+        def test_inject_setting_decorator_dataclass(self) -> None:
             """Tests value injection using setting decorator and dataclass"""
             msg = assemble(ClientWithValueInjectionSettingDecoratorDc).greet_world()
             self.assertEqual("Hello, World!55,test common,False", msg)
 
-    def test_inject_prevent_attribute_injection_attrs(self):
+    def test_inject_prevent_attribute_injection_attrs(self) -> None:
         """Tests value injection prevention using attrs"""
         val = assemble(ClientWithValuesPreventInjection, profile="attrs").get_value()
         self.assertEqual(val, True)
 
     if VER_3_7_AND_UP:
-        def test_inject_prevent_attribute_injection_dataclass(self):
+        def test_inject_prevent_attribute_injection_dataclass(self) -> None:
             """Tests value injection prevention using dataclass"""
             val = assemble(ClientWithValuesPreventInjection, profile="dataclass").get_value()
             self.assertEqual(val, True)
@@ -621,8 +621,10 @@ class ValueInjectionTests(unittest.TestCase):
 
 class ValueInjectionPrecedenceTest(unittest.TestCase):
     """Test value injection precedence"""
+    env_patcher : Any
+    arg_patcher : Any
     @classmethod
-    def setUpClass(cls):
+    def setUpClass(cls) -> None:
         """patches environment variables and command line args before testing precedence"""
         cls.env_patcher = patch.dict(os.environ, {
             f"{_APP_NAME}_SERVICE_PRECEDENCE_ATTRIB1": "11",
@@ -635,12 +637,12 @@ class ValueInjectionPrecedenceTest(unittest.TestCase):
         super().setUpClass()
 
     @classmethod
-    def tearDownClass(cls):
+    def tearDownClass(cls) -> None:
         super().tearDownClass()
         cls.env_patcher.stop()
         cls.arg_patcher.stop()
 
-    def test_inject_env_arg_precedence(self):
+    def test_inject_env_arg_precedence(self) -> None:
         """Tests value injection with precedence from environment vars and command args"""
         client = assemble(ClientWithValuePrecedence)
         val_attrib1 = client.get_value_attrib1()
