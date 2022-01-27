@@ -15,11 +15,11 @@ from ._inject import assemble, component, factory, value, load_config, setting
 from ._inject import set_values_from_config, add_values, set_values, ValueType
 
 DATACLASS_AVAILABLE = False
-try:
+""" try:
     import dataclasses as dc
 except ImportError:
     DATACLASS_AVAILABLE = False
-
+ """
 print(f"Version info: {sys.version_info}")
 
 __author__ = "Tobias Hermann"
