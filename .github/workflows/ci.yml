@@ -1,6 +1,6 @@
 name: ci
 
-on: [push, pull_request]
+on: [workflow_dispatch, push, pull_request]
 
 jobs:
   build:
@@ -20,6 +20,7 @@ jobs:
         run: |
           python3 -m pip install pylint
           python3 -m pip install mypy
+          python3 -m pip install -r requirements.txt
           python3 -m pip install .
       - name: Test
         run: |

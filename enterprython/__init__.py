@@ -1,12 +1,15 @@
-from ._inject import add_value
-from ._inject import add_values
+"""
+enterprython - Type-based dependency injection
+"""
 from ._inject import assemble
 from ._inject import component
 from ._inject import factory
-from ._inject import set_values
-from ._inject import set_values_from_config
-from ._inject import value
+from ._inject import load_config
+from ._inject import setting
+from ._inject import load_command_args
+from ._inject import load_env_vars
 
+#pylint: disable=invalid-name
 name = "enterprython"
 
 __author__ = "Tobias Hermann"
