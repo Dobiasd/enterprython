@@ -2,7 +2,6 @@
 enterprython - Type-based dependency injection
 """
 
-import configparser
 import inspect
 import os
 import sys
@@ -121,43 +120,9 @@ class _Factory(Generic[TypeT]):  # pylint: disable=unsubscriptable-object
 
 ValueType = Union[str, float, int, bool]
 
-#dbenavid: added new
 ENTERPRYTHON_VALUE_STORE: Dict[str, ValueType] = {}
-ENTERPRYTHON_VALUES: Dict[str, Dict[str, ValueType]] = {}
 ENTERPRYTHON_COMPONENTS: List[_Component[Any]] = []
 ENTERPRYTHON_FACTORIES: List[_Factory[Any]] = []
-
-
-def add_values(new_values: Dict[str, Dict[str, ValueType]]) -> None:
-    """Extent current value store (section, name, value)."""
-    for section, names_with_values in new_values.items():
-        if section in ENTERPRYTHON_VALUES:
-            for name, new_value in names_with_values.items():
-                if name in ENTERPRYTHON_VALUES[section]:
-                    raise ValueError(f'Duplicate value: {section}.{name}')
-    for section, names_with_values in new_values.items():
-        for name, new_value in names_with_values.items():
-            if section not in ENTERPRYTHON_VALUES:
-                ENTERPRYTHON_VALUES[section] = {}
-            ENTERPRYTHON_VALUES[section][name] = new_value
-
-
-def add_value(section: str, name: str, new_value: ValueType) -> None:
-    """Add a single new value to the store."""
-    add_values({section: {name: new_value}})
-
-
-def set_values(values: Dict[str, Dict[str, ValueType]]) -> None:
-    """Set global enterprython value store (section, name, value)."""
-    global ENTERPRYTHON_VALUES  # pylint: disable=global-statement
-    ENTERPRYTHON_VALUES = {}
-    add_values(values)
-
-
-def set_values_from_config(config: configparser.ConfigParser) -> None:
-    """Set global enterprython value store from a ConfigParser."""
-    set_values({s: dict(config.items(s)) for s in config.sections()})
-
 
 def _create(the_type: Callable[..., TypeT],
             profile: Optional[str] = None) -> Tuple[Optional[TypeT], Optional[_Component[Any]]]:
@@ -189,7 +154,6 @@ def _get_parameters_from_signature(the_type: Callable[..., TypeT]) -> List[_Para
                                             param.default != inspect.Signature.empty))
     return parameters
 
-#dbenavid
 def _append_path(preffix: str, path: str) -> str:
     """Appends the path, handles if preffix is empty"""
     path = path.lstrip("_")
@@ -216,7 +180,6 @@ def _missing_value(the_type: Callable[..., TypeT],
     raise AttributeError(msg)
 
 def _enforce_type(expected_type: Type[ValueType], key:str) -> ValueType:
-    stored_value: ValueType
     try:
         stored_value = ENTERPRYTHON_VALUE_STORE[key]
         return expected_type(stored_value)
@@ -278,13 +241,6 @@ def _assemble_impl(the_type: Callable[..., TypeT],
     if stored_component and not uses_manual_args:
         stored_component.set_instance_if_singleton(result)
     return result
-
-
-def value(the_type: Callable[..., TypeT], config_section: str, value_name: str) -> TypeT:
-    """Get a config value from the global enterprython config store."""
-    assert the_type in [bool, float, int, str]  # type: ignore
-    return the_type(ENTERPRYTHON_VALUES[config_section][value_name])
-
 
 def setting(key: str) -> _Setting:
     """Attribute decorator"""

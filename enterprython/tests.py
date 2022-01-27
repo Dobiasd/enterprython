@@ -2,7 +2,6 @@
 enterprython - tests
 """
 
-import configparser
 import os
 import sys
 import unittest
@@ -12,8 +11,7 @@ from typing import Any, NamedTuple, List
 import dataclasses as dc
 import attrs
 
-from ._inject import assemble, component, factory, value, load_config, setting
-from ._inject import set_values_from_config, add_values, set_values, ValueType
+from ._inject import assemble, component, factory, load_config, setting, ValueType
 
 
 print(f"Version info: {sys.version_info}")
@@ -129,18 +127,6 @@ class ServiceWithValuesAndSettingDecoratorDc:
     def greet(self, name:str) -> str:
         """Returns greeting message with values"""
         return f'Hello, {name}!{self.attrib1},{self.attrib2},{self.attrib3}'
-
-class WithValue:
-    """Example class using a configuration value"""
-
-    def __init__(self) -> None:
-        """Reads a value from the configuration."""
-        self._value: int = value(int, 'WithValue', 'value')
-
-    def show_value(self) -> str:
-        """Returns string representation of value."""
-        return str(self._value)
-
 
 class Client:
     """Depends on Service"""
@@ -422,33 +408,6 @@ class FactoryTest(unittest.TestCase):
         self.assertTrue(
             assemble(ClientServiceFromFactoryNonSingleton).service is not  # pylint: disable=protected-access
             assemble(ClientServiceFromFactoryNonSingleton).service)  # pylint: disable=protected-access
-
-
-class ValueTest(unittest.TestCase):
-    """Check value store."""
-
-    def test_value(self) -> None:
-        """Using value from configuration."""
-        config = configparser.ConfigParser()
-        config.read_string("""
-            [WithValue]
-            value = 42
-        """)
-        set_values_from_config(config)
-        self.assertEqual('42', WithValue().show_value())
-
-    def test_add_config_value(self) -> None:
-        """Manually adding a value."""
-        set_values({})
-        add_values({'WithValue': {'value': 43}})
-        self.assertEqual('43', WithValue().show_value())
-
-    def test_try_replace_value(self) -> None:
-        """Values must be unique."""
-        set_values({})
-        add_values({'WithValue': {'value': 43}})
-        with self.assertRaises(ValueError):
-            add_values({'WithValue': {'value': 43}})
 
 
 class ErrorTest(unittest.TestCase):
