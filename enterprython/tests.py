@@ -8,12 +8,15 @@ import sys
 import unittest
 from unittest.mock import patch
 from abc import ABC, abstractmethod
-from typing import Dict, NamedTuple, List
+from typing import Any, NamedTuple, List
 import dataclasses as dc
 import attrs
 
 from ._inject import assemble, component, factory, value, load_config, setting
 from ._inject import set_values_from_config, add_values, set_values, ValueType
+
+
+print(f"Version info: {sys.version_info}")
 
 __author__ = "Tobias Hermann"
 __copyright__ = "Copyright 2018, Tobias Hermann"
@@ -22,7 +25,7 @@ __license__ = "MIT"
 
 _APP_NAME = "TEST"
 
-def _load_config():
+def _load_config() -> None:
     load_config(_APP_NAME, ["config.toml"])
 
 # pylint: disable=too-few-public-methods
@@ -66,11 +69,11 @@ class ServiceWithValuesPrecedence:
     precedence_attrib1: int
     precedence_attrib2: int
 
-    def get_value_attrib1(self):
+    def get_value_attrib1(self) -> int:
         """Returns attribute1 value"""
         return self.precedence_attrib1
 
-    def get_value_attrib2(self):
+    def get_value_attrib2(self) -> int:
         """Returns attribute2 value"""
         return self.precedence_attrib2
 
@@ -80,8 +83,8 @@ class ServiceWithValuesAndSettingDecorator:
     """Class with values demoing setting decorator"""
     attrib3: bool
     #inject below attributes from given config keys:
-    attrib1: int = setting("COMMON_ATTRIB1")
-    attrib2: str = setting("COMMON_ATTRIB2")
+    attrib1: int = setting("COMMON_ATTRIB1") # type: ignore
+    attrib2: str = setting("COMMON_ATTRIB2") # type: ignore
 
     def greet(self, name:str) -> str:
         """Returns greeting message with values"""
@@ -93,7 +96,7 @@ class BaseServicePreventValueInjection(ABC):
     def get_value(self) -> ValueType:
         """return non injectable value"""
 
-@component(profiles="attrs")
+@component(profiles=["attrs"])
 @attrs.define
 class ServiceWithValuesPreventAttributeInjection(BaseServicePreventValueInjection):
     """Class with values showing how to prevent injection"""
@@ -105,7 +108,7 @@ class ServiceWithValuesPreventAttributeInjection(BaseServicePreventValueInjectio
     def get_value(self) -> ValueType:
         return self.attrib3
 
-@component(profiles="dataclass")
+@component(profiles=["dataclass"])
 @dc.dataclass
 class ServiceWithValuesPreventAttributeInjectionDc(BaseServicePreventValueInjection):
     """Class with values, showing how to prevent injection"""
@@ -120,8 +123,8 @@ class ServiceWithValuesAndSettingDecoratorDc:
     """Class with values demoing setting decorator"""
     attrib3: bool
     #inject below attributes from given config keys:
-    attrib1: int = setting("COMMON_ATTRIB1")
-    attrib2: str = setting("COMMON_ATTRIB2")
+    attrib1: int = setting("COMMON_ATTRIB1") # type: ignore
+    attrib2: str = setting("COMMON_ATTRIB2") # type: ignore
 
     def greet(self, name:str) -> str:
         """Returns greeting message with values"""
@@ -186,7 +189,7 @@ class ClientWithValuesPreventInjection:
     """Client preventing value injection"""
     service: BaseServicePreventValueInjection
 
-    def get_value(self) -> Dict[str, ValueType]:
+    def get_value(self) -> ValueType:
         """Returns value."""
         return self.service.get_value()
 
@@ -582,30 +585,30 @@ class ProfileTest(unittest.TestCase):
 class ValueInjectionTests(unittest.TestCase):
     """Tests value injection"""
     @classmethod
-    def setUpClass(cls):
+    def setUpClass(cls) -> None:
         _load_config()
 
-    def test_inject_basic(self):
+    def test_inject_basic(self) -> None:
         """Tests value injection"""
         msg = assemble(ClientWithValueInjection).greet_world()
         self.assertEqual("Hello, World!10,test WOW,False", msg)
 
-    def test_inject_setting_decorator(self):
+    def test_inject_setting_decorator(self) -> None:
         """Tests value injection using setting decorator"""
         msg = assemble(ClientWithValueInjectionSettingDecorator).greet_world()
         self.assertEqual("Hello, World!55,test common,False", msg)
 
-    def test_inject_setting_decorator_dataclass(self):
+    def test_inject_setting_decorator_dataclass(self) -> None:
         """Tests value injection using setting decorator and dataclass"""
         msg = assemble(ClientWithValueInjectionSettingDecoratorDc).greet_world()
         self.assertEqual("Hello, World!55,test common,False", msg)
 
-    def test_inject_prevent_attribute_injection_attrs(self):
+    def test_inject_prevent_attribute_injection_attrs(self) -> None:
         """Tests value injection prevention using attrs"""
         val = assemble(ClientWithValuesPreventInjection, profile="attrs").get_value()
         self.assertEqual(val, True)
 
-    def test_inject_prevent_attribute_injection_dataclass(self):
+    def test_inject_prevent_attribute_injection_dataclass(self) -> None:
         """Tests value injection prevention using dataclass"""
         val = assemble(ClientWithValuesPreventInjection, profile="dataclass").get_value()
         self.assertEqual(val, True)
@@ -613,8 +616,10 @@ class ValueInjectionTests(unittest.TestCase):
 
 class ValueInjectionPrecedenceTest(unittest.TestCase):
     """Test value injection precedence"""
+    env_patcher : Any
+    arg_patcher : Any
     @classmethod
-    def setUpClass(cls):
+    def setUpClass(cls) -> None:
         """patches environment variables and command line args before testing precedence"""
         cls.env_patcher = patch.dict(os.environ, {
             f"{_APP_NAME}_SERVICE_PRECEDENCE_ATTRIB1": "11",
@@ -627,12 +632,12 @@ class ValueInjectionPrecedenceTest(unittest.TestCase):
         super().setUpClass()
 
     @classmethod
-    def tearDownClass(cls):
+    def tearDownClass(cls) -> None:
         super().tearDownClass()
         cls.env_patcher.stop()
         cls.arg_patcher.stop()
 
-    def test_inject_env_arg_precedence(self):
+    def test_inject_env_arg_precedence(self) -> None:
         """Tests value injection with precedence from environment vars and command args"""
         client = assemble(ClientWithValuePrecedence)
         val_attrib1 = client.get_value_attrib1()

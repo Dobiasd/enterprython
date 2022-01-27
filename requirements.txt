@@ -1,2 +1,5 @@
 attrs
 toml
+types-toml
+dataclasses; python_version <= '3.6'
+types-dataclasses; python_version <= '3.6'

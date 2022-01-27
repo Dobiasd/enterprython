@@ -25,13 +25,13 @@ class _Setting(): # pylint: disable=too-few-public-methods
         self.key = key
 
 class _SettingMetadata(): # pylint: disable=too-few-public-methods
-    def __init__(self, name:str, typ:Optional[Type], key:str):
+    def __init__(self, name:str, typ:Optional[Type[Any]], key:str):
         self.name = name
         self.typ = typ
         self.key = key
 
 class _ParameterMetadata(): # pylint: disable=too-few-public-methods
-    def __init__(self, name: str, typ: Optional[Type], has_default:bool):
+    def __init__(self, name: str, typ: Type[Any], has_default:bool):
         self.name = name
         self.typ = typ
         self.has_default = has_default
@@ -74,7 +74,7 @@ class _Component(Generic[TypeT]):  # pylint: disable=unsubscriptable-object
         """Underlying target type of component."""
         return self._type
 
-    def get_setting(self, name) -> Optional[_SettingMetadata]:
+    def get_setting(self, name:str) -> Optional[_SettingMetadata]:
         """Search setting by name"""
         for entry in self._settings:
             if entry.name == name:
@@ -215,7 +215,7 @@ def _missing_value(the_type: Callable[..., TypeT],
     msg += f"Provide it using key: {param_path} or an static setting key"
     raise AttributeError(msg)
 
-def _enforce_type(expected_type: Type, key:str) -> ValueType:
+def _enforce_type(expected_type: Type[ValueType], key:str) -> ValueType:
     stored_value: ValueType
     try:
         stored_value = ENTERPRYTHON_VALUE_STORE[key]
@@ -290,7 +290,9 @@ def setting(key: str) -> _Setting:
     """Attribute decorator"""
     return _Setting(key)
 
-def _get_settings_from_dataclass(the_class: Callable[..., TypeT], annotations: Dict[str, type]):
+def _get_settings_from_dataclass(the_class: Callable[..., TypeT],
+    annotations: Dict[str, type]) -> List[_SettingMetadata]:
+
     """get settings from dataclass"""
     settings : List[_SettingMetadata] = []
     for annotation_name, annotation_type in annotations.items():
@@ -299,7 +301,9 @@ def _get_settings_from_dataclass(the_class: Callable[..., TypeT], annotations: D
             settings.append( _SettingMetadata(annotation_name, annotation_type, default.key) )
     return settings
 
-def _get_settings_from_attrs(the_class: Callable[..., TypeT], annotations: Dict[str, type]):
+def _get_settings_from_attrs(the_class: Callable[..., TypeT],
+    annotations: Dict[str, type]) -> List[_SettingMetadata]:
+
     """get settings from attrs class"""
     settings : List[_SettingMetadata] = []
     #default values are stored outside annotations:
@@ -435,7 +439,7 @@ def _is_list_type(the_type: Callable[..., TypeT]) -> bool:
         return False
 
 def _is_value_type(the_type: Callable[...,TypeT]) -> bool:
-    return the_type in [bool, float, int, str]
+    return the_type in [bool, float, int, str] # type: ignore
 
 def _is_instance(the_value: TypeT, the_type: Callable[..., TypeT]) -> bool:
     return isinstance(the_value, the_type)  # type: ignore
@@ -453,7 +457,7 @@ def _get_list_type_elem_type(list_type: Callable[..., TypeT]) -> Callable[..., A
     assert len(list_args) == 1
     return list_args[0]  # type: ignore
 
-def load_config(app_name: str, paths: List[str]):
+def load_config(app_name: str, paths: List[str]) -> None:
     """loads the configuration from a list of files,
     then from environment variables and finally from command arguments"""
     for path in paths:
