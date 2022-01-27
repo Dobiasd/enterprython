@@ -25,7 +25,7 @@ _APP_NAME = "TEST"
 
 
 def _load_config() -> None:
-    load_config(_APP_NAME, ["config.toml"])
+    load_config(_APP_NAME, ["test/config.toml"])
 
 
 # pylint: disable=too-few-public-methods
