@@ -336,7 +336,7 @@ class Service:
 Requirements and Installation
 -----------------------------
 
-You need Python 3.6.5 or higher.
+You need Python 3.7 or higher.
 
 ```bash
 python3 -m pip install enterprython
