@@ -9,17 +9,13 @@ import unittest
 from unittest.mock import patch
 from abc import ABC, abstractmethod
 from typing import Any, NamedTuple, List
+import dataclasses as dc
 import attrs
 
 from ._inject import assemble, component, factory, value, load_config, setting
 from ._inject import set_values_from_config, add_values, set_values, ValueType
 
-DATACLASS_AVAILABLE = False
-""" try:
-    import dataclasses as dc
-except ImportError:
-    DATACLASS_AVAILABLE = False
- """
+
 print(f"Version info: {sys.version_info}")
 
 __author__ = "Tobias Hermann"
@@ -112,28 +108,27 @@ class ServiceWithValuesPreventAttributeInjection(BaseServicePreventValueInjectio
     def get_value(self) -> ValueType:
         return self.attrib3
 
-if DATACLASS_AVAILABLE:
-    @component(profiles=["dataclass"])
-    @dc.dataclass
-    class ServiceWithValuesPreventAttributeInjectionDc(BaseServicePreventValueInjection):
-        """Class with values, showing how to prevent injection"""
-        attrib3: bool = dc.field(init=False, default=True)
+@component(profiles=["dataclass"])
+@dc.dataclass
+class ServiceWithValuesPreventAttributeInjectionDc(BaseServicePreventValueInjection):
+    """Class with values, showing how to prevent injection"""
+    attrib3: bool = dc.field(init=False, default=True)
 
-        def get_value(self) -> ValueType:
-            return self.attrib3
+    def get_value(self) -> ValueType:
+        return self.attrib3
 
-    @component()
-    @dc.dataclass
-    class ServiceWithValuesAndSettingDecoratorDc:
-        """Class with values demoing setting decorator"""
-        attrib3: bool
-        #inject below attributes from given config keys:
-        attrib1: int = setting("COMMON_ATTRIB1") # type: ignore
-        attrib2: str = setting("COMMON_ATTRIB2") # type: ignore
+@component()
+@dc.dataclass
+class ServiceWithValuesAndSettingDecoratorDc:
+    """Class with values demoing setting decorator"""
+    attrib3: bool
+    #inject below attributes from given config keys:
+    attrib1: int = setting("COMMON_ATTRIB1") # type: ignore
+    attrib2: str = setting("COMMON_ATTRIB2") # type: ignore
 
-        def greet(self, name:str) -> str:
-            """Returns greeting message with values"""
-            return f'Hello, {name}!{self.attrib1},{self.attrib2},{self.attrib3}'
+    def greet(self, name:str) -> str:
+        """Returns greeting message with values"""
+        return f'Hello, {name}!{self.attrib1},{self.attrib2},{self.attrib3}'
 
 class WithValue:
     """Example class using a configuration value"""
@@ -198,15 +193,14 @@ class ClientWithValuesPreventInjection:
         """Returns value."""
         return self.service.get_value()
 
-if DATACLASS_AVAILABLE:
-    @dc.dataclass
-    class ClientWithValueInjectionSettingDecoratorDc:
-        """Client with value injection and setting decorator"""
-        service: ServiceWithValuesAndSettingDecoratorDc
+@dc.dataclass
+class ClientWithValueInjectionSettingDecoratorDc:
+    """Client with value injection and setting decorator"""
+    service: ServiceWithValuesAndSettingDecoratorDc
 
-        def greet_world(self) ->str:
-            """Returns greeting message with values."""
-            return self.service.greet("World")
+    def greet_world(self) ->str:
+        """Returns greeting message with values."""
+        return self.service.greet("World")
 
 class ServiceFromFactory(NamedTuple):
     """Depends on nothing."""
@@ -604,22 +598,20 @@ class ValueInjectionTests(unittest.TestCase):
         msg = assemble(ClientWithValueInjectionSettingDecorator).greet_world()
         self.assertEqual("Hello, World!55,test common,False", msg)
 
-    if DATACLASS_AVAILABLE:
-        def test_inject_setting_decorator_dataclass(self) -> None:
-            """Tests value injection using setting decorator and dataclass"""
-            msg = assemble(ClientWithValueInjectionSettingDecoratorDc).greet_world()
-            self.assertEqual("Hello, World!55,test common,False", msg)
+    def test_inject_setting_decorator_dataclass(self) -> None:
+        """Tests value injection using setting decorator and dataclass"""
+        msg = assemble(ClientWithValueInjectionSettingDecoratorDc).greet_world()
+        self.assertEqual("Hello, World!55,test common,False", msg)
 
     def test_inject_prevent_attribute_injection_attrs(self) -> None:
         """Tests value injection prevention using attrs"""
         val = assemble(ClientWithValuesPreventInjection, profile="attrs").get_value()
         self.assertEqual(val, True)
 
-    if DATACLASS_AVAILABLE:
-        def test_inject_prevent_attribute_injection_dataclass(self) -> None:
-            """Tests value injection prevention using dataclass"""
-            val = assemble(ClientWithValuesPreventInjection, profile="dataclass").get_value()
-            self.assertEqual(val, True)
+    def test_inject_prevent_attribute_injection_dataclass(self) -> None:
+        """Tests value injection prevention using dataclass"""
+        val = assemble(ClientWithValuesPreventInjection, profile="dataclass").get_value()
+        self.assertEqual(val, True)
 
 
 class ValueInjectionPrecedenceTest(unittest.TestCase):
