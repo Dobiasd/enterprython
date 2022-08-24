@@ -14,10 +14,9 @@ setuptools.setup(
     url="http://github.com/Dobiasd/enterprython",
     package_data={"enterprython": ["py.typed"]},
     packages=["enterprython"],
+    python_requires=">=3.7",
     classifiers=(
         "Programming Language :: Python :: 3.7",
-        "Programming Language :: Python :: 3.8",
-        "Programming Language :: Python :: 3.9",
         "License :: OSI Approved :: MIT License",
         "Operating System :: OS Independent",
     ),
