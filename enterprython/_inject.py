@@ -435,7 +435,7 @@ def load_config(app_name: str, paths: List[str]) -> None:
     then from environment variables and finally from command arguments"""
     for path in paths:
         try:
-            _merge_dicts(ENTERPRYTHON_VALUE_STORE, toml.load(path))  # type: ignore
+            _merge_dicts(ENTERPRYTHON_VALUE_STORE, toml.load(path))
         except Exception as exception:
             raise Exception(f"Error loading file: {path}") from exception
     _merge_dicts(ENTERPRYTHON_VALUE_STORE, load_env_vars(app_name))
